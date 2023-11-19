@@ -1,10 +1,11 @@
+import threading
 import time
 from datetime import datetime
 
-from sqlalchemy import create_engine, event, orm
 from sqlalchemy import Column, String, Integer
+from sqlalchemy import create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy.orm import sessionmaker
 
 import manager
 import security
@@ -47,6 +48,7 @@ class User(Base):
         self.last_note_id = 0
         self.created_timestamp = int(datetime.now().timestamp())
         self.last_access_timestamp = int(datetime.now().timestamp())
+        self.notes = []
 
     @orm.reconstructor
     def init_on_load(self):
@@ -64,24 +66,13 @@ class User(Base):
         manager.user_key = key_pair['key']
         manager.user_iv = key_pair['iv']
 
-        manager.uptate_last_application_user(self)
+        print(f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
 
-        self.update_last_access()
-        self.fetch_user_notes()
+        # update everything in the background
+        threading.Thread(target=manager.uptate_last_application_user(self)).start()
+        threading.Thread(target=self.update_last_access()).start()
 
-    def fetch_user_notes(self):
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        # notes = session.query(Note).join(UserNoteLink).filter(UserNoteLink.user_id == self.user_id).all()
-
-        # users = session.query(database.User.user_id, database.User.display_name).all()
-        for note in session.query(Note).all():
-            session.expunge(note)
-            note.ensure_decrypted()
-            self.notes.append(note)
-        session.close()
-
-        return self.notes
+        self.notes = manager.fetch_user_notes(self.user_id)
 
     def update_note(self, note):
         if note is None:
@@ -97,7 +88,6 @@ class User(Base):
 
         # create new note if not exists
         if note_result is None:
-
             Session = sessionmaker(bind=engine)
             session = Session()
             session.add(note)
@@ -113,14 +103,14 @@ class User(Base):
 
     def update_last_access(self):
         self.last_access_timestamp = int(datetime.now().timestamp())
-        self.update_itself()
+        # self.update_itself()
 
-    def update_itself(self):
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        session.add(self)
-        session.commit()
-        session.close()
+    # def update_itself(self):
+    #     Session = sessionmaker(bind=engine)
+    #     session = Session()
+    #     session.add(self)
+    #     session.commit()
+    #     session.close()
 
 
 class Note(Base):
@@ -228,9 +218,9 @@ class AppSettings(Base):
         self.last_note_id = 0
 
 
-def create_table():
+def init():
     Base.metadata.create_all(engine)
 
 
 if __name__ == "__main__":
-    create_table()
+    init()

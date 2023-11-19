@@ -3,7 +3,7 @@ import manager
 
 
 def get_user():
-    last_user_id = manager.fetch_last_user_id()
+    last_user_id = manager.fetch_last_user()
     if last_user_id != 0:
         user = manager.fetch_user_by_id(last_user_id)
         if user is not None:
@@ -28,7 +28,7 @@ def get_user():
 
 
 if __name__ == '__main__':
-    database.create_table()
+    database.init()
 
     user = get_user()
     if user is None:

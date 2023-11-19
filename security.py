@@ -15,7 +15,7 @@ def calculate_key(user_input):
         algorithm=hashes.SHA256(),
         length=48,
         salt=salt,
-        iterations=1_000_000,
+        iterations=200_000,
     )
     result = kdf.derive(user_input.encode())
 

@@ -4,7 +4,7 @@ import manager
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # Stworzenie nowej sesji
-    database.create_table()
+    database.init()
 
     # name = input("Podaj imię: ")
     # manager.create_user(name)

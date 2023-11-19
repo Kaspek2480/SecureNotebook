@@ -9,30 +9,16 @@ user_key = None
 user_iv = None
 
 
-def create_user(name):
+def create_user(name, pin):
     Session = sessionmaker(bind=database.engine)
     session = Session()
 
-    pin = input("Podaj pin: ")
-
     user = database.User(pin_hash=security.create_pin_hash(pin), display_name=name)
 
-    try:
-        while True:
-            pin = input("Podaj pin ponownie: ")
-            pin_hash = security.create_pin_hash(pin)
-            if pin_hash == user.pin_hash:
-                break
-            else:
-                print("Pin się nie zgadza, spróbuj ponownie.")
-    except Exception as e:
-        print("Wystąpił błąd: {}".format(e))
-    finally:
-        session.add(user)
-        session.commit()
-        print("Użytkownik został utworzony")
+    session.add(user)
+    session.commit()
 
-    return user, session  # Zwracamy również sesję
+    return True
 
 
 #    for user in users:
@@ -40,7 +26,7 @@ def create_user(name):
 def fetch_users():
     Session = sessionmaker(bind=database.engine)
     session = Session()
-    users = session.query(database.User.user_id, database.User.display_name).all()
+    users = session.query(database.User.user_id, database.User.display_name, database.User.last_access_timestamp).all()
     return users
 
 
@@ -50,19 +36,43 @@ def fetch_user_by_id(user_id):
 
     user = session.query(database.User).filter(database.User.user_id == user_id).first()
     if user is None:
-        print(f"Nie znaleziono użytkownika o id: {user_id}")
         return None
+
+    session.expunge(user)
+    session.close()
+
     return user
 
 
-def fetch_last_user_id():
+def fetch_last_user():
     Session = sessionmaker(bind=database.engine)
     session = Session()
 
     app_settings = session.query(database.AppSettings).first()
     if app_settings is None:
-        return 0
-    return app_settings.last_user_id
+        return None
+
+    user = fetch_user_by_id(app_settings.last_user_id)
+    if user is None:
+        return None
+
+    return user
+
+
+def fetch_user_notes(user_id):
+    Session = sessionmaker(bind=database.engine)
+    session = Session()
+
+    note_list = []
+    notes = session.query(database.Note).filter(database.UserNoteLink.user_id == user_id).all()
+
+    for note in notes:
+        session.expunge(note)
+        note.ensure_decrypted()
+        note_list.append(note)
+    session.close()
+
+    return note_list
 
 
 def uptate_last_application_user(user):
@@ -77,5 +87,18 @@ def uptate_last_application_user(user):
     else:
         app_settings.last_user_id = user.user_id
 
+    session.commit()
+    session.close()
+
+
+def clear_last_user():
+    Session = sessionmaker(bind=database.engine)
+    session = Session()
+
+    app_settings = session.query(database.AppSettings).first()
+    if app_settings is None:
+        return None
+
+    app_settings.last_user_id = 0
     session.commit()
     session.close()
