@@ -2,6 +2,7 @@ import curses
 from datetime import datetime
 from enum import Enum
 from time import sleep
+from utils import print_centered_from_top, print_centered
 
 import database
 import manager
@@ -218,7 +219,7 @@ def draw_user_select_screen(stdscr, users):
         i = 0
         for user in currently_visible_users:
             user_info = user.display_name
-            last_visit_info = "Nieznany"
+            last_visit_info = utils.timestamp_to_date(user.last_access_timestamp)
             # last_visit_info = user.last_access_timestamp.strftime("%d/%m/%Y %H:%M")
 
             # Podświetl aktualnie wybrany wiersz
@@ -313,6 +314,93 @@ def draw_main_login_screen(stdscr):
         stdscr.refresh()
 
 
+def draw_notesa_select_screen(stdscr, notes):
+    curses.curs_set(0)
+    stdscr.clear()
+
+    # Pobierz wysokość i szerokość terminala
+    height, width = stdscr.getmaxyx()
+
+    # Ustaw długość listy użytkowników (maksymalnie 5)
+    note_list_length = min(len(notes), 7)
+
+    # Ustaw pozycję początkową
+    start_pos = 0
+    current_row = 0
+
+    while True:
+        stdscr.clear()
+
+        # Wyświetl napis "Super Program" na górze terminala
+        utils.print_centered_from_top(stdscr, "SecureNotebook - Notatki", 0, color_pair=3)
+
+        note_title_text = "Nazwa notatki"
+        last_edit_text = "Ostatnia edycja"
+
+        # Wyświetl nagłówki kolumn
+        stdscr.addstr(height // 2 - 3, width // 2 - len(note_title_text) - 5, note_title_text, curses.A_BOLD)
+        stdscr.addstr(height // 2 - 3, width // 2 + 5, last_edit_text, curses.A_BOLD)
+
+        currently_visible_notes = notes[start_pos:start_pos + note_list_length]
+
+        # Wyświetl listę użytkowników
+        i = 0
+        for note in currently_visible_notes:
+            note_title = note.title
+            last_edit_info = utils.timestamp_to_date(note.last_modify_timestamp)
+            if note.favorite:
+                note_title = "★ " + note_title
+            else:
+                note_title = "  " + note_title
+
+            # Podświetl aktualnie wybrany wiersz
+            if i == current_row:
+                stdscr.attron(curses.color_pair(4))
+                stdscr.addstr(height // 2 - 2 + i, width // 2 - len(note_title_text) - 5, note_title)
+                stdscr.addstr(height // 2 - 2 + i, width // 2 + 5, str(last_edit_info))
+                stdscr.attroff(curses.color_pair(4))
+            else:
+                stdscr.addstr(height // 2 - 2 + i, width // 2 - len(note_title_text) - 5, note_title)
+                stdscr.addstr(height // 2 - 2 + i, width // 2 + 5, str(last_edit_info))
+
+            i += 1
+
+        # Wyświetl aktualną pozycję na liście
+        stdscr.addstr(height - 1, 0,
+                      f"Strzałki: Góra/Dół, ENTER - wybierz użytkownika, Q - wyjdź.")
+
+        # Obsługa klawiszy
+        key = stdscr.getch()
+
+        if key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q:
+            return NavigationResult(NavigationAction.BACK, None)
+        elif key == curses.KEY_DOWN and current_row < note_list_length - 1:
+            current_row += 1
+            if current_row == note_list_length - 1 and start_pos + note_list_length < len(notes):
+                start_pos += 1
+            print(
+                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
+        elif key == curses.KEY_UP and current_row > 0:
+            current_row -= 1
+            if current_row == 0 and start_pos > 0:
+                start_pos -= 1
+            print(
+                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
+        elif key == curses.KEY_DOWN and current_row == note_list_length - 1 and start_pos + note_list_length < len(
+                notes):
+            start_pos += 1
+            print(
+                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
+        elif key == curses.KEY_UP and current_row == 0 and start_pos > 0:
+            start_pos -= 1
+            print(
+                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
+        elif key == 10:  # ENTER key
+            selected_user = notes[start_pos + current_row]
+            return NavigationResult(NavigationAction.SUCCESS, selected_user.user_id)
+        stdscr.refresh()
+
+
 def handle_auth(stdscr):
     while True:
         user_choice = draw_main_login_screen(stdscr)
@@ -352,67 +440,6 @@ def handle_auth(stdscr):
             display_program_info(stdscr)
 
 
-sample_notes_list = [
-    {"name": "Notatka 1", "favorite": True, "modification_date": datetime(2023, 1, 1, 12, 30, 0)},
-    {"name": "Notatka 2", "favorite": False, "modification_date": datetime(2023, 2, 15, 9, 45, 0)},
-    {"name": "Notatka 3", "favorite": True, "modification_date": datetime(2023, 3, 20, 15, 0, 0)},
-    {"name": "Notatka 4", "favorite": False, "modification_date": datetime(2023, 4, 5, 18, 20, 0)},
-    {"name": "Notatka 5", "favorite": True, "modification_date": datetime(2023, 5, 10, 10, 0, 0)},
-    {"name": "Notatka 6", "favorite": False, "modification_date": datetime(2023, 6, 25, 14, 30, 0)},
-    {"name": "Notatka 7", "favorite": True, "modification_date": datetime(2023, 7, 8, 8, 45, 0)},
-    {"name": "Notatka 8", "favorite": False, "modification_date": datetime(2023, 8, 18, 16, 15, 0)},
-    {"name": "Notatka 9", "favorite": True, "modification_date": datetime(2023, 9, 22, 11, 0, 0)},
-    {"name": "Notatka 10", "favorite": False, "modification_date": datetime(2023, 10, 30, 13, 45, 0)},
-]
-
-
-from utils import print_centered_from_top, print_centered
-
-
-def display_notes_list(stdscr, notes_list):
-    curses.curs_set(0)  # Ustawienie widoczności kursora na 0
-
-    stdscr.clear()  # Wyczyszczenie ekranu
-
-    # Nagłówek
-    header = "Lista Notatek"
-    print_centered_from_top(stdscr, header, line=0, color_pair=1)
-
-    # Wysokość i szerokość okna
-    height, width = stdscr.getmaxyx()
-
-    # Początkowa pozycja dla kafelków
-    start_y = 2
-
-    # Szerokość kafelka
-    tile_width = width - 4
-
-    # Wyświetlanie kafelków dla każdej notatki
-    for note in notes_list:
-        name = note["name"]
-        favorite = note["favorite"]
-        modification_date = note["modification_date"]
-
-        # Jeśli notatka jest oznaczona jako ulubiona, kolor obwódki to zielony, inaczej biały
-        border_color = 3 if favorite else 1
-
-        # Formatowanie daty modyfikacji w czytelny sposób
-        modification_date_str = modification_date.strftime("%Y-%m-%d %H:%M:%S")
-
-        # Formatowanie i wyświetlanie kafelka
-        tile = f"{name[:tile_width-2]:<{tile_width-2}}"
-
-        # Rysowanie obwódki wokół kafelka
-        stdscr.attron(curses.color_pair(border_color))
-        stdscr.addstr(start_y, 2, f" {tile} ", curses.color_pair(border_color))
-        stdscr.attroff(curses.color_pair(border_color))
-
-        start_y += 2  # Zwiększanie pozycji dla kolejnego kafelka
-
-    stdscr.refresh()  # Odświeżenie ekranu
-    stdscr.getch()  # Oczekiwanie na dowolny klawisz
-
-
 def main(stdscr):
     database.init()
 
@@ -425,9 +452,12 @@ def main(stdscr):
     # curses.curs_set(0)  # Ukryj kursor
     stdscr.clear()
 
-    display_notes_list(stdscr, sample_notes_list)
-
     auth_result = handle_auth(stdscr)
+    if auth_result.action == NavigationAction.FAILURE:
+        return
+
+    user = auth_result.data
+    draw_notesa_select_screen(stdscr, manager.fetch_user_notes(user.user_id))
 
     # print_user_list(stdscr, users)
 

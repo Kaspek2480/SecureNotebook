@@ -2,7 +2,7 @@ import threading
 import time
 from datetime import datetime
 
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, Boolean
 from sqlalchemy import create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -66,7 +66,8 @@ class User(Base):
         manager.user_key = key_pair['key']
         manager.user_iv = key_pair['iv']
 
-        print(f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
+        print(
+            f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
 
         # update everything in the background
         threading.Thread(target=manager.uptate_last_application_user(self)).start()
@@ -122,6 +123,7 @@ class Note(Base):
     content = Column(String)
     created_timestamp = Column(Integer)
     last_modify_timestamp = Column(Integer)
+    favorite = Column(Boolean)
 
     encrypted = True
 

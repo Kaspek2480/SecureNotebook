@@ -72,6 +72,9 @@ def fetch_user_notes(user_id):
         note_list.append(note)
     session.close()
 
+    # sort by favorite
+    note_list.sort(key=lambda x: x.favorite, reverse=True)
+
     return note_list
 
 

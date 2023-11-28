@@ -27,33 +27,50 @@ def get_user():
             return user
 
 
+# def generate_notes():
+#     notes = []
+#     for i in range(10):
+#         boxdel = manager.fetch_user_by_id(12)
+#         if not boxdel.verify_pin("123"):
+#             print("Pin się nie zgadza!")
+#             exit(1)
+#
+#         note = database.Note(
+#             title=f"Piękna notatka {i}",
+#             content=f"To jest piękna notatka {i}",
+#         )
+#         boxdel.update_note(note)
+#     return notes
+
+
 if __name__ == '__main__':
     database.init()
+    generate_notes()
 
-    user = get_user()
-    if user is None:
-        print("Tworzysz nowego użytkownika")
-        print("Podaj imię: ")
-
-        user, session = manager.create_user(input())
-
-    print(f"Witaj {user.display_name}!")
-    pin = input("Podaj pin: ")
-    if not user.verify_pin(pin):
-        print("Pin się nie zgadza!")
-        exit(1)
-
-    print("Witaj w aplikacji!")
-
-    notes = user.notes
-    print("Twoje notatki:")
-    for note in notes:
-        print(f"ID: {note.note_id} | Tytuł: {note.title}")
-
-    # note = database.Note(title="Piękna notatka", content="To jest piękna notatka")
-    # user.update_note(note)
-
-    first_note = notes[0]
-    first_note.title = first_note.title + "1"
-
-    user.update_note(first_note)
+    # user = get_user()
+    # if user is None:
+    #     print("Tworzysz nowego użytkownika")
+    #     print("Podaj imię: ")
+    #
+    #     user, session = manager.create_user(input())
+    #
+    # print(f"Witaj {user.display_name}!")
+    # pin = input("Podaj pin: ")
+    # if not user.verify_pin(pin):
+    #     print("Pin się nie zgadza!")
+    #     exit(1)
+    #
+    # print("Witaj w aplikacji!")
+    #
+    # notes = user.notes
+    # print("Twoje notatki:")
+    # for note in notes:
+    #     print(f"ID: {note.note_id} | Tytuł: {note.title}")
+    #
+    # # note = database.Note(title="Piękna notatka", content="To jest piękna notatka")
+    # # user.update_note(note)
+    #
+    # first_note = notes[0]
+    # first_note.title = first_note.title + "1"
+    #
+    # user.update_note(first_note)
