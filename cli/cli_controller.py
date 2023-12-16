@@ -1,6 +1,11 @@
-from enum import Enum
+import sys
+from os.path import abspath, dirname
 
-from cli.cli_utils import *
+# Add the 'shared' directory to the Python path
+sys.path.append(abspath(dirname(dirname(__file__))))
+
+from enum import Enum
+from cli_utils import *
 from shared.database import init
 from shared.manager import *
 
@@ -89,7 +94,7 @@ def draw_register_screen(stdscr):
             break
 
         print_center_for_time(stdscr, "Kod PIN musi składać się z samych cyfr!", height // 2 + 3, color_pair=1,
-                                    wait_time=1)
+                              wait_time=1)
         continue
 
     # show summary
@@ -108,7 +113,7 @@ def draw_register_screen(stdscr):
         if key == 10:  # Enter
             if create_user(username, pin):
                 print_center_for_time(stdscr, "Użytkownik utworzony pomyślnie!", height // 2 + 9,
-                                            color_pair=2, wait_time=1)
+                                      color_pair=2, wait_time=1)
                 clear_last_user()
                 return
         elif key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q
@@ -123,7 +128,7 @@ def draw_pin_auth_screen(stdscr, user):
 
     print_centered(stdscr, f"Witaj {user.display_name}!", line_from_center=-2)
     print_centered(stdscr, "Podaj kod PIN, aby się zalogować, jeśli chcesz się wylogować wpisz 'q'",
-                         line_from_center=-1)
+                   line_from_center=-1)
 
     while True:
         height, width = stdscr.getmaxyx()
@@ -171,11 +176,11 @@ def draw_pin_auth_screen(stdscr, user):
         if verify_user_pin(user, pin):
             initialize_user(user, pin)
             print_center_for_time(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6, color_pair=2,
-                                        wait_time=1)
+                                  wait_time=1)
             return NavigationResult(NavigationAction.SUCCESS, None)
         else:
             print_center_for_time(stdscr, "Pin niepoprawny, spróbuj jeszcze raz", height // 2 + 6, color_pair=1,
-                                        wait_time=1)
+                                  wait_time=1)
 
 
 def draw_user_select_screen(stdscr, users):
@@ -587,7 +592,7 @@ def handle_auth(stdscr):
             display_program_info(stdscr)
 
 
-def start(stdscr):
+def main(stdscr):
     init()
 
     curses.start_color()
@@ -613,3 +618,6 @@ def start(stdscr):
 
             note = notes_result.data
             draw_note_edit_screen(stdscr, note)
+
+
+curses.wrapper(main)
