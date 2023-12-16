@@ -1,6 +1,6 @@
 import curses
 
-import cli_controller
+from cli import cli_controller
 
 
 def main(stdscr):

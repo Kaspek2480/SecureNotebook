@@ -1,10 +1,8 @@
-import curses
 from enum import Enum
 
-from shared.manager import create_user, fetch_users, fetch_user_by_id, fetch_last_user, fetch_user_notes, \
-    clear_last_user, update_note, initialize_user, ensure_decrypted_note, ensure_encrypted_note, verify_user_pin
-from shared.database import init, Note
-import utils
+from cli.cli_utils import *
+from shared.database import init
+from shared.manager import *
 
 
 class AuthAction(Enum):
@@ -48,7 +46,7 @@ def display_program_info(stdscr):
 
     # Wyśrodkowanie i wyświetlenie informacji o programie
     for i, line in enumerate(program_info):
-        utils.print_centered(stdscr, line, line_from_center=i - len(program_info) // 2, color_pair=2)
+        print_centered(stdscr, line, line_from_center=i - len(program_info) // 2, color_pair=2)
 
     stdscr.refresh()  # Odświeżenie ekranu
 
@@ -62,10 +60,10 @@ def draw_register_screen(stdscr):
     stdscr.clear()
     height, width = stdscr.getmaxyx()
 
-    utils.print_centered_from_top(stdscr, "SecureNotebook - Rejestracja", 0, color_pair=3)
+    print_centered_from_top(stdscr, "SecureNotebook - Rejestracja", 0, color_pair=3)
 
     # get username
-    utils.print_centered(stdscr, "Podaj nazwę użytkownika (max 16 znaków):", line_from_center=-2)
+    print_centered(stdscr, "Podaj nazwę użytkownika (max 16 znaków):", line_from_center=-2)
     username_prompt = curses.newwin(1, 21, height // 2 - 1, (width - 20) // 2)  # 20 = 16 + 4 (4 = 2x margines)
     username_prompt.addstr(0, 0, "> ")
     username_prompt.refresh()
@@ -76,7 +74,7 @@ def draw_register_screen(stdscr):
     username_prompt.keypad(False)  # Wyłącz tryb KEY_PAD
 
     # get pin, try until user enters pin which is digit only
-    utils.print_centered(stdscr, "Podaj kod PIN (6 cyfr):")
+    print_centered(stdscr, "Podaj kod PIN (6 cyfr):")
     while True:
         pin_prompt = curses.newwin(1, 9, height // 2 + 1, (width - 8) // 2)
         pin_prompt.addstr(0, 0, "> ")
@@ -90,7 +88,7 @@ def draw_register_screen(stdscr):
         if pin.isdigit():
             break
 
-        utils.print_center_for_time(stdscr, "Kod PIN musi składać się z samych cyfr!", height // 2 + 3, color_pair=1,
+        print_center_for_time(stdscr, "Kod PIN musi składać się z samych cyfr!", height // 2 + 3, color_pair=1,
                                     wait_time=1)
         continue
 
@@ -99,17 +97,17 @@ def draw_register_screen(stdscr):
     stdscr.refresh()
     stdscr.clear()
 
-    utils.print_centered(stdscr, "Twoje dane podane przy rejestracji:", line_from_center=0)
-    utils.print_centered(stdscr, f"Użytkownik: {username}", line_from_center=1, color_pair=4)
-    utils.print_centered(stdscr, f"Pin: {pin}", line_from_center=2, color_pair=4)
+    print_centered(stdscr, "Twoje dane podane przy rejestracji:", line_from_center=0)
+    print_centered(stdscr, f"Użytkownik: {username}", line_from_center=1, color_pair=4)
+    print_centered(stdscr, f"Pin: {pin}", line_from_center=2, color_pair=4)
 
     # wait for user to confirm
-    utils.print_centered(stdscr, "Wciśnij ENTER aby potwierdzić, lub Q aby anulować", 7)
+    print_centered(stdscr, "Wciśnij ENTER aby potwierdzić, lub Q aby anulować", 7)
     while True:
         key = stdscr.getch()
         if key == 10:  # Enter
             if create_user(username, pin):
-                utils.print_center_for_time(stdscr, "Użytkownik utworzony pomyślnie!", height // 2 + 9,
+                print_center_for_time(stdscr, "Użytkownik utworzony pomyślnie!", height // 2 + 9,
                                             color_pair=2, wait_time=1)
                 clear_last_user()
                 return
@@ -121,10 +119,10 @@ def draw_pin_auth_screen(stdscr, user):
     curses.curs_set(0)  # Ukryj kursor
     stdscr.clear()
 
-    utils.print_centered_from_top(stdscr, "SecureNotebook - Logowanie kodem PIN", 0, color_pair=3)
+    print_centered_from_top(stdscr, "SecureNotebook - Logowanie kodem PIN", 0, color_pair=3)
 
-    utils.print_centered(stdscr, f"Witaj {user.display_name}!", line_from_center=-2)
-    utils.print_centered(stdscr, "Podaj kod PIN, aby się zalogować, jeśli chcesz się wylogować wpisz 'q'",
+    print_centered(stdscr, f"Witaj {user.display_name}!", line_from_center=-2)
+    print_centered(stdscr, "Podaj kod PIN, aby się zalogować, jeśli chcesz się wylogować wpisz 'q'",
                          line_from_center=-1)
 
     while True:
@@ -172,11 +170,11 @@ def draw_pin_auth_screen(stdscr, user):
 
         if verify_user_pin(user, pin):
             initialize_user(user, pin)
-            utils.print_center_for_time(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6, color_pair=2,
+            print_center_for_time(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6, color_pair=2,
                                         wait_time=1)
             return NavigationResult(NavigationAction.SUCCESS, None)
         else:
-            utils.print_center_for_time(stdscr, "Pin niepoprawny, spróbuj jeszcze raz", height // 2 + 6, color_pair=1,
+            print_center_for_time(stdscr, "Pin niepoprawny, spróbuj jeszcze raz", height // 2 + 6, color_pair=1,
                                         wait_time=1)
 
 
@@ -198,7 +196,7 @@ def draw_user_select_screen(stdscr, users):
         stdscr.clear()
 
         # Wyświetl napis "Super Program" na górze terminala
-        utils.print_centered_from_top(stdscr, "SecureNotebook - Wybór użytkownika", 0, color_pair=3)
+        print_centered_from_top(stdscr, "SecureNotebook - Wybór użytkownika", 0, color_pair=3)
 
         # Wyświetl nagłówki kolumn
         stdscr.addstr(height // 2 - 3, width // 2 - len("Nazwa użytkownika") - 5, "Nazwa użytkownika", curses.A_BOLD)
@@ -210,7 +208,7 @@ def draw_user_select_screen(stdscr, users):
         i = 0
         for user in currently_visible_users:
             user_info = user.display_name
-            last_visit_info = utils.timestamp_to_date(user.last_access_timestamp)
+            last_visit_info = timestamp_to_date(user.last_access_timestamp)
             # last_visit_info = user.last_access_timestamp.strftime("%d/%m/%Y %H:%M")
 
             # Podświetl aktualnie wybrany wiersz
@@ -263,7 +261,7 @@ def draw_main_login_screen(stdscr):
     # Ustaw pozycję początkową
     current_row = 0
 
-    utils.print_centered_from_top(stdscr, "SecureNotebook - Autoryzacja", 0, color_pair=3)
+    print_centered_from_top(stdscr, "SecureNotebook - Autoryzacja", 0, color_pair=3)
 
     # Ustaw opcje menu
     menu_options = [{"action": AuthAction.LOGIN, "text": "Zaloguj się"},
@@ -324,7 +322,7 @@ def draw_notes_select_screen(stdscr, user):
 
         stdscr.clear()
 
-        utils.print_centered_from_top(stdscr, "SecureNotebook - Notatki", 0, color_pair=3)
+        print_centered_from_top(stdscr, "SecureNotebook - Notatki", 0, color_pair=3)
 
         note_title_text = "Nazwa notatki"
         last_edit_text = "Ostatnia edycja"
@@ -338,7 +336,7 @@ def draw_notes_select_screen(stdscr, user):
         i = 0
         for note in currently_visible_notes:
             note_title = note.title
-            last_edit_info = utils.timestamp_to_date(note.last_modify_timestamp)
+            last_edit_info = timestamp_to_date(note.last_modify_timestamp)
             if note.favorite:
                 note_title = "★ " + note_title
             else:
@@ -404,8 +402,8 @@ def draw_notes_select_screen(stdscr, user):
             stdscr.refresh()
             stdscr.clear()
 
-            utils.print_centered(stdscr, "Czy na pewno chcesz usunąć notatkę?", line_from_center=0)
-            utils.print_centered(stdscr, "Wciśnij ENTER aby potwierdzić, lub Q aby anulować", 1)
+            print_centered(stdscr, "Czy na pewno chcesz usunąć notatkę?", line_from_center=0)
+            print_centered(stdscr, "Wciśnij ENTER aby potwierdzić, lub Q aby anulować", 1)
 
             while True:
                 key = stdscr.getch()
@@ -424,9 +422,9 @@ def get_note_name_screen(stdscr):
     stdscr.clear()
     height, width = stdscr.getmaxyx()
 
-    utils.print_centered_from_top(stdscr, "SecureNotebook - Nowa notatka", 0, color_pair=3)
+    print_centered_from_top(stdscr, "SecureNotebook - Nowa notatka", 0, color_pair=3)
 
-    utils.print_centered(stdscr, "Podaj nazwę notatki (max 16 znaków):", line_from_center=-2)
+    print_centered(stdscr, "Podaj nazwę notatki (max 16 znaków):", line_from_center=-2)
     note_prompt = curses.newwin(1, 21, height // 2 - 1, (width - 20) // 2)  # 20 = 16 + 4 (4 = 2x margines)
     note_prompt.addstr(0, 0, "> ")
     note_prompt.refresh()

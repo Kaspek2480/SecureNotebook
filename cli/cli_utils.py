@@ -1,6 +1,5 @@
 import curses
 from datetime import datetime
-from time import sleep
 
 
 def print_centered_from_top(stdscr, text, line, color_pair=0):
