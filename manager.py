@@ -1,8 +1,6 @@
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
-
-import database
 import security
+import database
 
 # secure that
 user_key = None
@@ -64,15 +62,25 @@ def fetch_user_notes(user_id):
     session = Session()
 
     note_list = []
-    notes = session.query(database.Note).filter(database.UserNoteLink.user_id == user_id).all()
 
-    for note in notes:
-        session.expunge(note)
-        note.ensure_decrypted()
-        note_list.append(note)
+    notes_id_list = session.query(database.UserNoteLink.note_id).filter(database.UserNoteLink.user_id == user_id).all()
+
+    if not notes_id_list:
+        session.close()
+        return note_list
+
+    # Rozpakuj tuplę z listy ID notatek
+    notes_id_list = [note_id[0] for note_id in notes_id_list]
+
+    for note_id in notes_id_list:
+        note = session.query(database.Note).filter(database.Note.note_id == note_id).first()
+        if note:
+            session.expunge(note)
+            note.ensure_decrypted()
+            note_list.append(note)
+
     session.close()
 
-    # sort by favorite
     note_list.sort(key=lambda x: x.favorite, reverse=True)
 
     return note_list
@@ -103,5 +111,17 @@ def clear_last_user():
         return None
 
     app_settings.last_user_id = 0
+    session.commit()
+    session.close()
+
+
+def update_note(note):
+    note.ensure_encrypted()
+    note.update_last_modify()
+
+    Session = sessionmaker(bind=database.engine)
+    session = Session()
+
+    session.merge(note)
     session.commit()
     session.close()

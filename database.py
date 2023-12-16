@@ -50,9 +50,9 @@ class User(Base):
         self.last_access_timestamp = int(datetime.now().timestamp())
         self.notes = []
 
-    @orm.reconstructor
-    def init_on_load(self):
-        print("Executed user init_on_load with " + self.display_name)
+    # @orm.reconstructor
+    # def init_on_load(self):
+    # print("Executed user init_on_load with " + self.display_name)
 
     def verify_pin(self, pin):
         if self.pin_hash != security.create_pin_hash(pin):
@@ -66,8 +66,8 @@ class User(Base):
         manager.user_key = key_pair['key']
         manager.user_iv = key_pair['iv']
 
-        print(
-            f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
+        # print(
+        #     f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
 
         # update everything in the background
         threading.Thread(target=manager.uptate_last_application_user(self)).start()
@@ -77,7 +77,7 @@ class User(Base):
 
     def update_note(self, note):
         if note is None:
-            raise Exception("update_note: not is None")
+            raise Exception("update_note: note is None")
 
         note.ensure_encrypted()
 
@@ -101,6 +101,17 @@ class User(Base):
 
         # update note
         note.update_last_modify()
+
+    def remove_note(self, note):
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        note_result = session.query(Note).filter(Note.note_id == note.note_id).first()
+        session.delete(note_result)
+        session.commit()
+        session.close()
+
+        UserNoteLink.delete_user_note_link(self, note)
 
     def update_last_access(self):
         self.last_access_timestamp = int(datetime.now().timestamp())
@@ -128,33 +139,35 @@ class Note(Base):
     encrypted = True
 
     # invoked only when creating new note
-    def __init__(self, title, content):
-        print("Executed __init__ with " + content)
+    def __init__(self, title, content=""):
+        # print("Executed __init__ with " + content)
         super().__init__()
 
         self.encrypted = False
         self.title = title
         self.content = content
         self.priority = 0
+        self.favorite = False
         self.created_timestamp = int(time.time())
         self.last_modify_timestamp = int(time.time())
 
     # invoked while fetching from db
     @orm.reconstructor
     def init_on_load(self):
-        print("Executed note init_on_load with " + self.content)
+        # print("Executed note init_on_load with " + self.content)
         self.encrypted = True
 
+    def update_last_modify(self):
+        self.last_modify_timestamp = int(datetime.now().timestamp())
+
     def update_itself(self):
+        self.update_last_modify()
+
         Session = sessionmaker(bind=engine)
         session = Session()
         session.add(self)
         session.commit()
         session.close()
-
-    def update_last_modify(self):
-        self.last_modify_timestamp = int(datetime.now().timestamp())
-        self.update_itself()
 
     def decrypt(self):
         if self.encrypted:

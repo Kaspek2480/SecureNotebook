@@ -1,8 +1,5 @@
 import curses
-from datetime import datetime
 from enum import Enum
-from time import sleep
-from utils import print_centered_from_top, print_centered
 
 import database
 import manager
@@ -39,7 +36,7 @@ def display_program_info(stdscr):
         " ",
         "Twoje notatki są zabezpieczone przed nieautoryzowanym dostępem.",
         "Wykorzystujemy mocne szyfrowanie AES-256-CBC do ochrony treści.",
-        "Klucz do odszyfrowania jest generowane z PIN-u z uzyciem KDF PBKDF2.",
+        "Klucz do odszyfrowania jest generowany z PIN-u z uzyciem KDF PBKDF2.",
         "Ta technika jest znana z menedżerów haseł, co oznacza, że jesteś w dobrych rękach.",
         " ",
         "Wersja: 1.0",
@@ -92,15 +89,16 @@ def draw_register_screen(stdscr):
         if pin.isdigit():
             break
 
-        curses.curs_set(0)
         utils.print_center_for_time(stdscr, "Kod PIN musi składać się z samych cyfr!", height // 2 + 3, color_pair=1,
                                     wait_time=1)
-        curses.curs_set(1)
         continue
 
     # show summary
+    curses.curs_set(0)
+    stdscr.refresh()
     stdscr.clear()
-    utils.print_centered(stdscr, "Twojde dane podane przy rejestracji:", line_from_center=0)
+
+    utils.print_centered(stdscr, "Twoje dane podane przy rejestracji:", line_from_center=0)
     utils.print_centered(stdscr, f"Użytkownik: {username}", line_from_center=1, color_pair=4)
     utils.print_centered(stdscr, f"Pin: {pin}", line_from_center=2, color_pair=4)
 
@@ -121,14 +119,10 @@ def draw_register_screen(stdscr):
 def draw_pin_auth_screen(stdscr, user):
     curses.curs_set(0)  # Ukryj kursor
     stdscr.clear()
-    height, width = stdscr.getmaxyx()
 
     utils.print_centered_from_top(stdscr, "SecureNotebook - Logowanie kodem PIN", 0, color_pair=3)
 
-    # Napis "Witaj ponownie Dawid" na środku ekranu
     utils.print_centered(stdscr, f"Witaj {user.display_name}!", line_from_center=-2)
-
-    # Napis "wpisywanie kodu pin" na środku pod napisem powitalnym
     utils.print_centered(stdscr, "Podaj kod PIN, aby się zalogować, jeśli chcesz się wylogować wpisz 'q'",
                          line_from_center=-1)
 
@@ -140,11 +134,10 @@ def draw_pin_auth_screen(stdscr, user):
         pin_length = 6
         pin = ""
 
-        # Ustawienie domyślnego miejsca dla kodu PIN
+        # default_pin = "______"
         default_pin = "_" * pin_length
         pin_input.addstr(0, 0, default_pin)
 
-        # Początkowe ustawienie kursora na pierwszym miejscu
         cursor_position = 0
         pin_input.move(0, cursor_position)
 
@@ -173,16 +166,12 @@ def draw_pin_auth_screen(stdscr, user):
 
             elif digit == 'q' or digit == 'Q' or key == 27:  # ESC or Q
                 return NavigationResult(NavigationAction.FAILURE, None)
-            else:
-                print(
-                    f"CLICK OTHER | pin: {pin}, cursor: {cursor_position}, digit: {digit} len: {len(pin)} pin_length: {pin_length} pin_input: {pin_input}")
 
         stdscr.refresh()
 
         if user.verify_pin(pin):
-            utils.print_centered_from_top(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6,
-                                          color_pair=2)
-            sleep(1)
+            utils.print_center_for_time(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6, color_pair=2,
+                                        wait_time=1)
             return NavigationResult(NavigationAction.SUCCESS, None)
         else:
             utils.print_center_for_time(stdscr, "Pin niepoprawny, spróbuj jeszcze raz", height // 2 + 6, color_pair=1,
@@ -247,23 +236,15 @@ def draw_user_select_screen(stdscr, users):
             current_row += 1
             if current_row == user_list_length - 1 and start_pos + user_list_length < len(users):
                 start_pos += 1
-            print(
-                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {user_list_length}, len(users): {len(users)}")
         elif key == curses.KEY_UP and current_row > 0:
             current_row -= 1
             if current_row == 0 and start_pos > 0:
                 start_pos -= 1
-            print(
-                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {user_list_length}, len(users): {len(users)}")
         elif key == curses.KEY_DOWN and current_row == user_list_length - 1 and start_pos + user_list_length < len(
                 users):
             start_pos += 1
-            print(
-                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {user_list_length}, len(users): {len(users)}")
         elif key == curses.KEY_UP and current_row == 0 and start_pos > 0:
             start_pos -= 1
-            print(
-                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {user_list_length}, len(users): {len(users)}")
         elif key == 10:  # ENTER key
             selected_user = users[start_pos + current_row]
             return NavigationResult(NavigationAction.SUCCESS, selected_user.user_id)
@@ -314,9 +295,12 @@ def draw_main_login_screen(stdscr):
         stdscr.refresh()
 
 
-def draw_notesa_select_screen(stdscr, notes):
+def draw_notes_select_screen(stdscr, user):
     curses.curs_set(0)
     stdscr.clear()
+    refresh = False
+
+    notes = manager.fetch_user_notes(user.user_id)
 
     # Pobierz wysokość i szerokość terminala
     height, width = stdscr.getmaxyx()
@@ -329,9 +313,15 @@ def draw_notesa_select_screen(stdscr, notes):
     current_row = 0
 
     while True:
+        # in case user added new note / added to favourite, refresh notes list
+        if refresh:
+            start_pos = 0
+            current_row = 0
+            notes = manager.fetch_user_notes(user.user_id)
+            refresh = False
+
         stdscr.clear()
 
-        # Wyświetl napis "Super Program" na górze terminala
         utils.print_centered_from_top(stdscr, "SecureNotebook - Notatki", 0, color_pair=3)
 
         note_title_text = "Nazwa notatki"
@@ -343,7 +333,6 @@ def draw_notesa_select_screen(stdscr, notes):
 
         currently_visible_notes = notes[start_pos:start_pos + note_list_length]
 
-        # Wyświetl listę użytkowników
         i = 0
         for note in currently_visible_notes:
             note_title = note.title
@@ -367,38 +356,195 @@ def draw_notesa_select_screen(stdscr, notes):
 
         # Wyświetl aktualną pozycję na liście
         stdscr.addstr(height - 1, 0,
-                      f"Strzałki: Góra/Dół, ENTER - wybierz użytkownika, Q - wyjdź.")
+                      f"Strzałki: Góra/Dół, ENTER - wybierz, N - nowa, D - usuń, "
+                      f"F - ulubiona, Q - wyjdź, L - wyloguj")
 
         # Obsługa klawiszy
         key = stdscr.getch()
 
+        current_note = None
+        if len(notes) > 0:
+            current_note = notes[start_pos + current_row]
+
         if key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q:
-            return NavigationResult(NavigationAction.BACK, None)
+            return NavigationResult(NavigationAction.EXIT, None)
         elif key == curses.KEY_DOWN and current_row < note_list_length - 1:
             current_row += 1
             if current_row == note_list_length - 1 and start_pos + note_list_length < len(notes):
                 start_pos += 1
-            print(
-                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
         elif key == curses.KEY_UP and current_row > 0:
             current_row -= 1
             if current_row == 0 and start_pos > 0:
                 start_pos -= 1
-            print(
-                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
         elif key == curses.KEY_DOWN and current_row == note_list_length - 1 and start_pos + note_list_length < len(
                 notes):
             start_pos += 1
-            print(
-                f"DOWN current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
         elif key == curses.KEY_UP and current_row == 0 and start_pos > 0:
             start_pos -= 1
-            print(
-                f"UP current_row: {current_row}, start_pos: {start_pos}, user_list_length: {note_list_length}, len(users): {len(notes)}")
         elif key == 10:  # ENTER key
-            selected_user = notes[start_pos + current_row]
-            return NavigationResult(NavigationAction.SUCCESS, selected_user.user_id)
+            return NavigationResult(NavigationAction.SUCCESS, current_note)
+        elif key == ord('f') or key == ord('F'):  # add to favourite
+            current_note.favorite = not current_note.favorite
+            manager.update_note(current_note)
+
+            refresh = True
+        elif key == ord('n') or key == ord('N'):  # new note
+            note_name = get_note_name_screen(stdscr)
+            created_note = database.Note(title=note_name.data)
+            user.update_note(created_note)
+
+            refresh = True
+        elif key == ord('l') or key == ord('L'):  # log out
+            return NavigationResult(NavigationAction.BACK, None)
+        elif key == ord('d') or key == ord('D'):  # delete note
+            curses.curs_set(0)
+            stdscr.refresh()
+            stdscr.clear()
+
+            utils.print_centered(stdscr, "Czy na pewno chcesz usunąć notatkę?", line_from_center=0)
+            utils.print_centered(stdscr, "Wciśnij ENTER aby potwierdzić, lub Q aby anulować", 1)
+
+            while True:
+                key = stdscr.getch()
+                if key == 10:
+                    user.remove_note(current_note)
+                    refresh = True
+                    break
+                elif key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q
+                    break
+
         stdscr.refresh()
+
+
+def get_note_name_screen(stdscr):
+    curses.curs_set(1)  # show cursor, so user can see where to type
+    stdscr.clear()
+    height, width = stdscr.getmaxyx()
+
+    utils.print_centered_from_top(stdscr, "SecureNotebook - Nowa notatka", 0, color_pair=3)
+
+    utils.print_centered(stdscr, "Podaj nazwę notatki (max 16 znaków):", line_from_center=-2)
+    note_prompt = curses.newwin(1, 21, height // 2 - 1, (width - 20) // 2)  # 20 = 16 + 4 (4 = 2x margines)
+    note_prompt.addstr(0, 0, "> ")
+    note_prompt.refresh()
+    curses.echo()
+    note_prompt.keypad(True)  # Włącz tryb KEY_PAD
+    note_name = note_prompt.getstr(0, 2, 16).decode('utf-8')
+    curses.noecho()
+    note_prompt.keypad(False)  # Wyłącz tryb KEY_PAD
+
+    return NavigationResult(NavigationAction.SUCCESS, note_name)
+
+
+def draw_note_edit_screen(stdscr, note):
+    curses.curs_set(1)  # Ukryj kursor
+    curses.noecho()  # Wyłącz echo (nie pokazuj wpisywanych znaków)
+    curses.cbreak()  # Włącz tryb "cbreak" (nie czekaj na Enter)
+    stdscr.keypad(True)  # Włącz obsługę specjalnych klawiszy
+
+    current_line = 0
+    cursor_x = 0
+    scroll_offset = 0
+
+    note_lines = note.content.split("\n")
+
+    while True:
+        stdscr.clear()
+
+        for i, line in enumerate(note_lines[scroll_offset:]):
+            stdscr.addstr(i, 0, line)
+
+        # display title and shortcuts
+        title_str = "Tytuł: " + note.title
+        stdscr.addstr(curses.LINES - 1, 0, title_str, curses.color_pair(2))
+        shortcuts_str = " | CTRL+S - zapisz, CTRL+E - powrót"
+        stdscr.addstr(curses.LINES - 1, len(title_str), shortcuts_str, curses.A_DIM)
+
+        stdscr.move(current_line, cursor_x)
+        stdscr.refresh()
+        key = stdscr.getch()
+
+        if key == curses.KEY_UP:
+            current_line = max(0, current_line - 1)
+            if current_line < scroll_offset:
+                scroll_offset = current_line
+        elif key == curses.KEY_DOWN:
+            current_line = min(len(note_lines) - 1, current_line + 1)
+            if current_line >= scroll_offset + curses.LINES - 1:
+                scroll_offset = current_line - curses.LINES + 2
+        elif key == curses.KEY_LEFT:
+            cursor_x = max(0, cursor_x - 1)
+        elif key == curses.KEY_RIGHT:
+            if len(note_lines[current_line]) - 1 >= curses.COLS:
+                continue
+            if current_line < len(note_lines):
+                cursor_x = min(len(note_lines[current_line]), cursor_x + 1)
+
+        elif key == 10:  # Enter
+            # check if maximum number of lines is reached
+            if len(note_lines) >= curses.LINES - 1:
+                continue
+
+            # add new line
+            note_lines.insert(current_line + 1, "")
+            current_line += 1
+            cursor_x = 0
+        elif key == 27:  # Escape
+            break
+        elif key == 127:  # Backspace
+            # Usuń znak z aktualnej linii
+            if cursor_x > 0 or current_line > 0:
+                if cursor_x == 0:
+                    # Dołącz aktualną linię do poprzedniej linii
+                    cursor_x = len(note_lines[current_line - 1])
+                    note_lines[current_line - 1] += note_lines.pop(current_line)
+                    current_line -= 1
+                    if current_line < scroll_offset:
+                        scroll_offset = current_line
+                else:
+                    note_lines[current_line] = (
+                            note_lines[current_line][:cursor_x - 1]
+                            + note_lines[current_line][cursor_x:]
+                    )
+                    cursor_x -= 1
+        elif key == curses.KEY_DC:  # DEL
+            # Usuń znak na aktualnej pozycji
+            if cursor_x < len(note_lines[current_line]) or current_line < len(note_lines) - 1:
+                if cursor_x == len(note_lines[current_line]):
+                    # Dołącz kolejną linię do aktualnej linii
+                    note_lines[current_line] += note_lines.pop(current_line + 1)
+                else:
+                    note_lines[current_line] = (
+                            note_lines[current_line][:cursor_x]
+                            + note_lines[current_line][cursor_x + 1:]
+                    )
+        elif curses.keyname(key) == b'^S':  # save the note
+            note.content = "\n".join(note_lines)
+            manager.update_note(note)
+
+            # remove old message
+            stdscr.addstr(curses.LINES - 1, 0, " " * len(title_str + shortcuts_str), curses.color_pair(1))
+            # add new message
+            stdscr.addstr(curses.LINES - 1, 0, "Saved!", curses.color_pair(2))
+
+            stdscr.refresh()
+            curses.napms(1000)
+
+            note.ensure_decrypted()
+        elif curses.keyname(key) == b'^E':
+            return NavigationResult(NavigationAction.SUCCESS, None)
+        else:
+            # add new character
+            # check if maximum width is reached
+            if len(note_lines[current_line]) >= curses.COLS:
+                continue
+            note_lines[current_line] = (
+                    note_lines[current_line][:cursor_x]
+                    + chr(key)
+                    + note_lines[current_line][cursor_x:]
+            )
+            cursor_x += 1
+            is_modified = True
 
 
 def handle_auth(stdscr):
@@ -427,7 +573,7 @@ def handle_auth(stdscr):
 
                 # user selected, show pin auth screen
                 user = manager.fetch_user_by_id(str(select_result.data))
-                print("Selected user: " + user.display_name)
+                # print("Selected user: " + user.display_name)
 
                 if draw_pin_auth_screen(stdscr, user).action == NavigationAction.SUCCESS:
                     return NavigationResult(NavigationAction.SUCCESS, user)
@@ -440,7 +586,7 @@ def handle_auth(stdscr):
             display_program_info(stdscr)
 
 
-def main(stdscr):
+def start(stdscr):
     database.init()
 
     curses.start_color()
@@ -449,25 +595,20 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
-    # curses.curs_set(0)  # Ukryj kursor
     stdscr.clear()
 
-    auth_result = handle_auth(stdscr)
-    if auth_result.action == NavigationAction.FAILURE:
-        return
+    while True:
+        auth_result = handle_auth(stdscr)
+        if auth_result.action == NavigationAction.FAILURE:
+            return
 
-    user = auth_result.data
-    draw_notesa_select_screen(stdscr, manager.fetch_user_notes(user.user_id))
+        user = auth_result.data
+        while True:
+            notes_result = draw_notes_select_screen(stdscr, user)
+            if notes_result.action == NavigationAction.EXIT:
+                exit(0)
+            elif notes_result.action == NavigationAction.BACK:
+                break
 
-    # print_user_list(stdscr, users)
-
-    # Po wyjściu z pętli, czyść ekran i wyświetl komunikat powitalny
-    stdscr.clear()
-    stdscr.addstr(2, 2, f"Witaj, użytkowniku {auth_result.data.display_name}!")
-    stdscr.refresh()
-
-    # Czekaj na klawisz przed zamknięciem programu
-    stdscr.getch()
-
-
-curses.wrapper(main)
+            note = notes_result.data
+            draw_note_edit_screen(stdscr, note)

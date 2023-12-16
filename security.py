@@ -24,6 +24,7 @@ def calculate_key(user_input):
 
 
 def encrypt_text(aes_key, aes_iv, plaintext):
+    # print("Encrypting text:", plaintext)
     cipher = Cipher(algorithms.AES(aes_key), modes.CBC(aes_iv), backend=default_backend())
 
     # Użyj PKCS7 padding
