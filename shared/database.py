@@ -1,4 +1,3 @@
-import threading
 import time
 from datetime import datetime
 
@@ -7,8 +6,8 @@ from sqlalchemy import create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-import manager
-import security
+# from shared.manager import uptate_last_application_user, fetch_user_notes
+from shared.security import create_pin_hash
 
 # inicjalizacja połaczenia z bazą danych
 engine = create_engine('sqlite:///notebook_database.sqlite', echo=False)
@@ -55,31 +54,28 @@ class User(Base):
     # print("Executed user init_on_load with " + self.display_name)
 
     def verify_pin(self, pin):
-        if self.pin_hash != security.create_pin_hash(pin):
+        if self.pin_hash != create_pin_hash(pin):
             return False
 
-        self.init_after_auth(pin)
         return True
 
-    def init_after_auth(self, pin):
-        key_pair = security.calculate_key(pin)
-        manager.user_key = key_pair['key']
-        manager.user_iv = key_pair['iv']
-
-        # print(
-        #     f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {manager.user_key}, iv = {manager.user_iv}")
-
-        # update everything in the background
-        threading.Thread(target=manager.uptate_last_application_user(self)).start()
-        threading.Thread(target=self.update_last_access()).start()
-
-        self.notes = manager.fetch_user_notes(self.user_id)
+    # def init_after_auth(self, pin):
+    #     key_pair = calculate_key(pin)
+    #     user_key = key_pair['key']
+    #     user_iv = key_pair['iv']
+    #
+    #     # print(
+    #     #     f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {user_key}, iv = {user_iv}")
+    #
+    #     # update everything in the background
+    #     threading.Thread(target=uptate_last_application_user(self)).start()
+    #     threading.Thread(target=self.update_last_access()).start()
+    #
+    #     self.notes = fetch_user_notes(self.user_id)
 
     def update_note(self, note):
         if note is None:
             raise Exception("update_note: note is None")
-
-        note.ensure_encrypted()
 
         # check if note exists
         Session = sessionmaker(bind=engine)
@@ -169,25 +165,25 @@ class Note(Base):
         session.commit()
         session.close()
 
-    def decrypt(self):
-        if self.encrypted:
-            self.content = security.decrypt_text(manager.user_key, manager.user_iv, bytes.fromhex(self.content))
-            self.title = security.decrypt_text(manager.user_key, manager.user_iv, bytes.fromhex(self.title))
-            self.encrypted = False
-
-    def encrypt(self):
-        if not self.encrypted:
-            self.content = security.encrypt_text(manager.user_key, manager.user_iv, self.content.encode())
-            self.title = security.encrypt_text(manager.user_key, manager.user_iv, self.title.encode())
-            self.encrypted = True
-
-    def ensure_encrypted(self):
-        if not self.encrypted:
-            self.encrypt()
-
-    def ensure_decrypted(self):
-        if self.encrypted:
-            self.decrypt()
+    # def decrypt(self):
+    #     if self.encrypted:
+    #         self.content = decrypt_text(user_key, user_iv, bytes.fromhex(self.content))
+    #         self.title = decrypt_text(user_key, user_iv, bytes.fromhex(self.title))
+    #         self.encrypted = False
+    #
+    # def encrypt(self):
+    #     if not self.encrypted:
+    #         self.content = encrypt_text(user_key, user_iv, self.content.encode())
+    #         self.title = encrypt_text(user_key, user_iv, self.title.encode())
+    #         self.encrypted = True
+    #
+    # def ensure_encrypted(self):
+    #     if not self.encrypted:
+    #         self.encrypt()
+    #
+    # def ensure_decrypted(self):
+    #     if self.encrypted:
+    #         self.decrypt()
 
 
 class UserNoteLink(Base):

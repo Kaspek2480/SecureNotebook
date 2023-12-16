@@ -1,8 +1,9 @@
 import curses
 from enum import Enum
 
-import database
-import manager
+from shared.manager import create_user, fetch_users, fetch_user_by_id, fetch_last_user, fetch_user_notes, \
+    clear_last_user, update_note, initialize_user, ensure_decrypted_note, ensure_encrypted_note, verify_user_pin
+from shared.database import init, Note
 import utils
 
 
@@ -107,10 +108,10 @@ def draw_register_screen(stdscr):
     while True:
         key = stdscr.getch()
         if key == 10:  # Enter
-            if manager.create_user(username, pin):
+            if create_user(username, pin):
                 utils.print_center_for_time(stdscr, "Użytkownik utworzony pomyślnie!", height // 2 + 9,
                                             color_pair=2, wait_time=1)
-                manager.clear_last_user()
+                clear_last_user()
                 return
         elif key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q
             return
@@ -169,7 +170,8 @@ def draw_pin_auth_screen(stdscr, user):
 
         stdscr.refresh()
 
-        if user.verify_pin(pin):
+        if verify_user_pin(user, pin):
+            initialize_user(user, pin)
             utils.print_center_for_time(stdscr, "Autoryzacja udana, ładowanie danych..", height // 2 + 6, color_pair=2,
                                         wait_time=1)
             return NavigationResult(NavigationAction.SUCCESS, None)
@@ -300,7 +302,7 @@ def draw_notes_select_screen(stdscr, user):
     stdscr.clear()
     refresh = False
 
-    notes = manager.fetch_user_notes(user.user_id)
+    notes = fetch_user_notes(user.user_id)
 
     # Pobierz wysokość i szerokość terminala
     height, width = stdscr.getmaxyx()
@@ -317,7 +319,7 @@ def draw_notes_select_screen(stdscr, user):
         if refresh:
             start_pos = 0
             current_row = 0
-            notes = manager.fetch_user_notes(user.user_id)
+            notes = fetch_user_notes(user.user_id)
             refresh = False
 
         stdscr.clear()
@@ -385,12 +387,13 @@ def draw_notes_select_screen(stdscr, user):
             return NavigationResult(NavigationAction.SUCCESS, current_note)
         elif key == ord('f') or key == ord('F'):  # add to favourite
             current_note.favorite = not current_note.favorite
-            manager.update_note(current_note)
+            update_note(current_note)
 
             refresh = True
         elif key == ord('n') or key == ord('N'):  # new note
             note_name = get_note_name_screen(stdscr)
-            created_note = database.Note(title=note_name.data)
+            created_note = Note(title=note_name.data)
+            ensure_encrypted_note(created_note)
             user.update_note(created_note)
 
             refresh = True
@@ -520,7 +523,7 @@ def draw_note_edit_screen(stdscr, note):
                     )
         elif curses.keyname(key) == b'^S':  # save the note
             note.content = "\n".join(note_lines)
-            manager.update_note(note)
+            update_note(note)
 
             # remove old message
             stdscr.addstr(curses.LINES - 1, 0, " " * len(title_str + shortcuts_str), curses.color_pair(1))
@@ -530,7 +533,7 @@ def draw_note_edit_screen(stdscr, note):
             stdscr.refresh()
             curses.napms(1000)
 
-            note.ensure_decrypted()
+            ensure_decrypted_note(note)
         elif curses.keyname(key) == b'^E':
             return NavigationResult(NavigationAction.SUCCESS, None)
         else:
@@ -555,24 +558,24 @@ def handle_auth(stdscr):
             while True:
 
                 # try to log in last user, if not possible - show user select screen
-                user = manager.fetch_last_user()
+                user = fetch_last_user()
                 if user is not None:
                     if draw_pin_auth_screen(stdscr, user).action == NavigationAction.SUCCESS:
                         # user logged in successfully
                         return NavigationResult(NavigationAction.SUCCESS, user)
 
                     # user cancel auth by pressing 'q' - remove last user from db
-                    manager.clear_last_user()
+                    clear_last_user()
                     continue
 
-                select_result = draw_user_select_screen(stdscr, manager.fetch_users())
+                select_result = draw_user_select_screen(stdscr, fetch_users())
                 if select_result.action == NavigationAction.BACK:
                     break
                 if select_result.data is None:
                     continue
 
                 # user selected, show pin auth screen
-                user = manager.fetch_user_by_id(str(select_result.data))
+                user = fetch_user_by_id(str(select_result.data))
                 # print("Selected user: " + user.display_name)
 
                 if draw_pin_auth_screen(stdscr, user).action == NavigationAction.SUCCESS:
@@ -587,7 +590,7 @@ def handle_auth(stdscr):
 
 
 def start(stdscr):
-    database.init()
+    init()
 
     curses.start_color()
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)  # Przykładowa para kolorów (tekst na niebieskim tle)
