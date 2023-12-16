@@ -22,8 +22,6 @@ def create_user(name, pin):
     return True
 
 
-#    for user in users:
-#        print(f"ID: {user.user_id}, Nazwa: {user.display_name}")
 def fetch_users():
     Session = sessionmaker(bind=engine)
     session = Session()

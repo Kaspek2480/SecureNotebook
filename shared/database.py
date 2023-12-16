@@ -6,9 +6,6 @@ from sqlalchemy import create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# from shared.manager import uptate_last_application_user, fetch_user_notes
-from shared.security import create_pin_hash
-
 # inicjalizacja połaczenia z bazą danych
 engine = create_engine('sqlite:///notebook_database.sqlite', echo=False)
 conn = engine.connect()
@@ -52,26 +49,6 @@ class User(Base):
     # @orm.reconstructor
     # def init_on_load(self):
     # print("Executed user init_on_load with " + self.display_name)
-
-    def verify_pin(self, pin):
-        if self.pin_hash != create_pin_hash(pin):
-            return False
-
-        return True
-
-    # def init_after_auth(self, pin):
-    #     key_pair = calculate_key(pin)
-    #     user_key = key_pair['key']
-    #     user_iv = key_pair['iv']
-    #
-    #     # print(
-    #     #     f"init_after_auth: user_id = {self.user_id}, pin = {pin}, key = {user_key}, iv = {user_iv}")
-    #
-    #     # update everything in the background
-    #     threading.Thread(target=uptate_last_application_user(self)).start()
-    #     threading.Thread(target=self.update_last_access()).start()
-    #
-    #     self.notes = fetch_user_notes(self.user_id)
 
     def update_note(self, note):
         if note is None:
