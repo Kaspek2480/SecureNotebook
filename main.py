@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-gui_controller_path = "gui/gui_controller.py"
+gui_controller_path = "gui/gui_login_view.py"
 cli_controller_path = "cli/cli_controller.py"
 
 

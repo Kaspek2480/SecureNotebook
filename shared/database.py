@@ -1,3 +1,4 @@
+import os
 import time
 from datetime import datetime
 
@@ -6,9 +7,13 @@ from sqlalchemy import create_engine, orm
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# inicjalizacja połaczenia z bazą danych
-engine = create_engine('sqlite:///notebook_database.sqlite', echo=False)
+# get dir ../shared
+db_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "notebook_database.sqlite")
+print("Database file: " + db_file)
+
+engine = create_engine('sqlite:///' + db_file, echo=False)
 conn = engine.connect()
+print(f"Connected to database: {conn}")
 
 Base = declarative_base()
 
