@@ -22,10 +22,10 @@ def create_user(name, pin):
     return True
 
 
-def fetch_users():
+def fetch_users() -> list:
     Session = sessionmaker(bind=engine)
     session = Session()
-    users = session.query(User.user_id, User.display_name, User.last_access_timestamp).all()
+    users = session.query(User).all()
     return users
 
 

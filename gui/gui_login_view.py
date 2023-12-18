@@ -1,14 +1,11 @@
 import sys
 from os.path import abspath, dirname
-from tkinter import messagebox
 
 # Add the 'shared' directory to the Python path
 sys.path.append(abspath(dirname(dirname(__file__))))
 
 import os
-import tkinter
 
-import customtkinter
 from PIL import Image
 
 from shared.database import init
@@ -16,39 +13,6 @@ from shared.manager import *
 from gui.gui_utils import *
 
 input_pin = None
-initialized = False
-
-
-class ScrollableLabelButtonFrame(customtkinter.CTkScrollableFrame):
-    def __init__(self, master, command=None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.grid_columnconfigure(0, weight=1)
-
-        self.command = command
-        self.radiobutton_variable = customtkinter.StringVar()
-        self.label_list = []
-        self.button_list = []
-
-    def add_item(self, item, image=None):
-        label = customtkinter.CTkLabel(self, text=item, image=image, compound="left", padx=5, anchor="w")
-        button = customtkinter.CTkButton(self, text="Zaloguj", width=60, height=24, border_color="gray70",
-                                         border_width=1, fg_color="transparent", text_color=("gray10", "gray90"),
-                                         hover_color=("gray70", "gray30"))
-        if self.command is not None:
-            button.configure(command=lambda: self.command(item))
-        label.grid(row=len(self.label_list), column=0, pady=(0, 10), sticky="w")
-        button.grid(row=len(self.button_list), column=1, pady=(0, 10), padx=5)
-        self.label_list.append(label)
-        self.button_list.append(button)
-
-    def remove_item(self, item):
-        for label, button in zip(self.label_list, self.button_list):
-            if item == label.cget("text"):
-                label.destroy()
-                button.destroy()
-                self.label_list.remove(label)
-                self.button_list.remove(button)
-                return
 
 
 class UserList(customtkinter.CTkScrollableFrame):
@@ -61,19 +25,27 @@ class UserList(customtkinter.CTkScrollableFrame):
         self.label_list = []
         self.button_list = []
 
-    def add_item(self, item, image=None):
-        item_id = item["id"]
-        item_name = item["name"]
+    def add_item(self, user_obj, image=None):
+        user_id = user_obj.user_id
+        user_name = user_obj.display_name
 
-        def cmd():
-            print(f"login button clicked: {item_id}")
-            if initialized:
-                print("initialized")
+        def pin_verify():
+            while True:
+                pin = open_pin_dialog(f"Podaj PIN dla użytkownika {user_name}")
+                if pin is None:
+                    return
 
-        label = customtkinter.CTkLabel(self, text=item_name, image=image, compound="left", padx=5, anchor="w")
+                if not verify_user_pin(user_obj, pin):
+                    messagebox.showerror("Błąd", "Nieprawidłowy PIN!")
+                    continue
+
+                print("PIN verified")
+                break
+
+        label = customtkinter.CTkLabel(self, text=user_name, image=image, compound="left", padx=5, anchor="w")
         button = customtkinter.CTkButton(self, text="Zaloguj", width=60, height=24, border_color="gray70",
                                          border_width=1, fg_color="transparent", text_color=("gray10", "gray90"),
-                                         hover_color=("gray70", "gray30"), command=cmd())
+                                         hover_color=("gray70", "gray30"), command=pin_verify)
 
         label.grid(row=len(self.label_list), column=0, pady=(10, 20), sticky="w")  # Increased padding for each item
         button.grid(row=len(self.button_list), column=1, pady=(10, 20), padx=5)  # Increased padding for each item
@@ -199,7 +171,7 @@ class App(customtkinter.CTk):
         detailed_info_font = customtkinter.CTkFont(family="Arial", size=16)  # enlarging details font
         detailed_info_label = customtkinter.CTkLabel(about_frame, text=detailed_info, width=120, height=25,
                                                      font=detailed_info_font)
-        detailed_info_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
+        detailed_info_label.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
         detailed_info_label.grid(row=1, column=0, padx=20, pady=20)
 
         detailed_info_2 = (
@@ -208,7 +180,7 @@ class App(customtkinter.CTk):
             "Dodatkowo, KDF pomaga w zabezpieczeniu przed atakami typu \"rainbow table\", gdzie atakujący korzysta z gotowych zestawów zahaszowanych haseł w celu przyspieszenia ataku.")
         detailed_info_2_label = customtkinter.CTkLabel(about_frame, text=detailed_info_2, width=120, height=25,
                                                        font=detailed_info_font, wraplength=600)
-        detailed_info_2_label.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
+        detailed_info_2_label.place(relx=0.5, rely=0.5, anchor=customtkinter.CENTER)
 
         return about_frame
 
@@ -229,7 +201,7 @@ class App(customtkinter.CTk):
 
         users = fetch_users()
         for user in users:
-            user_list.add_item({"id": user.user_id, "name": user.display_name}, image=self.user_image)
+            user_list.add_item(user, image=self.user_image)
 
         return login_frame
 
