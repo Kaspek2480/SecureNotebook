@@ -61,11 +61,19 @@ class UserList(customtkinter.CTkScrollableFrame):
                 self.button_list.remove(button)
                 return
 
+    def clear(self):
+        for label, button in zip(self.label_list, self.button_list):
+            label.destroy()
+            button.destroy()
+        self.label_list.clear()
+        self.button_list.clear()
+
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
+        self.user_list = None
         self.user_pin = None
         self.iconbitmap("resources/app_icon.ico")
 
@@ -98,10 +106,7 @@ class App(customtkinter.CTk):
         self.navigation_frame.grid_rowconfigure(5, weight=1)
 
         self.login_frame = self.create_login_frame()
-
-        self.register_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
-        self.register_frame.grid_columnconfigure(0, weight=1)
-
+        self.register_frame = self.create_register_frame()
         self.about_frame = self.create_about_frame()
 
         self.navigation_frame_label = customtkinter.CTkLabel(self.navigation_frame, text=" Secure Notebook",
@@ -115,7 +120,8 @@ class App(customtkinter.CTk):
                                                     border_spacing=10, text="Logowanie",
                                                     fg_color="transparent", text_color=("gray10", "gray90"),
                                                     hover_color=("gray70", "gray30"),
-                                                    image=self.login_image, anchor="w", command=self.login_button_event)
+                                                    image=self.login_image, anchor="w",
+                                                    command=lambda: self.switch_frame("login"))
         self.login_button.grid(row=1, column=0, sticky="ew")
 
         self.register_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
@@ -123,21 +129,23 @@ class App(customtkinter.CTk):
                                                        fg_color="transparent", text_color=("gray10", "gray90"),
                                                        hover_color=("gray70", "gray30"),
                                                        image=self.register_image, anchor="w",
-                                                       command=self.register_button_event)
+                                                       command=lambda: self.switch_frame("register"))
         self.register_button.grid(row=2, column=0, sticky="ew")
 
         self.about_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
                                                     border_spacing=10, text="O programie",
                                                     fg_color="transparent", text_color=("gray10", "gray90"),
                                                     hover_color=("gray70", "gray30"),
-                                                    image=self.about_image, anchor="w", command=self.about_button_event)
+                                                    image=self.about_image, anchor="w",
+                                                    command=lambda: self.switch_frame("about"))
         self.about_button.grid(row=3, column=0, sticky="ew")
 
         self.exit_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10,
                                                    text="Wyjdź",
                                                    fg_color="transparent", text_color=("gray10", "gray90"),
                                                    hover_color=("gray70", "gray30"),
-                                                   image=self.exit_image, anchor="w", command=self.exit_button_event)
+                                                   image=self.exit_image, anchor="w",
+                                                   command=lambda: self.destroy())
         self.exit_button.grid(row=4, column=0, sticky="ew")
         # </editor-fold>
 
@@ -148,9 +156,8 @@ class App(customtkinter.CTk):
                                                          font=customtkinter.CTkFont(size=12))
         self.login_status_label.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
-        global initialized
-        initialized = True
-        self.select_frame_by_name("login")
+        # default frame
+        self.switch_frame("login")
 
     def create_about_frame(self) -> customtkinter.CTkFrame:
         about_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -195,17 +202,97 @@ class App(customtkinter.CTk):
                                                  font=main_label_font, width=120, height=25)
         main_info_label.grid(row=0, column=0, padx=20, pady=20)
 
-        user_list = UserList(master=login_frame, width=700, height=400,
-                             corner_radius=0)
-        user_list.place(relx=0.5, rely=0.5, anchor='center')
-
-        users = fetch_users()
-        for user in users:
-            user_list.add_item(user, image=self.user_image)
+        self.user_list = UserList(master=login_frame, width=700, height=400, corner_radius=0)
+        self.user_list.place(relx=0.5, rely=0.5, anchor='center')
 
         return login_frame
 
-    def select_frame_by_name(self, name):
+    def create_register_frame(self) -> customtkinter.CTkFrame:
+        register_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        register_frame.grid_columnconfigure(0, weight=1)
+        register_frame.grid_rowconfigure(0, pad=60)
+
+        main_label_font = customtkinter.CTkFont(family="Helvetica", size=20)
+        main_info_label = customtkinter.CTkLabel(register_frame,
+                                                 text="Zarejestruj nowego użytkownika:",
+                                                 font=main_label_font, width=120, height=25)
+        main_info_label.grid(row=0, column=0, padx=20, pady=20)
+
+        # <editor-fold desc="Base labels">
+        register_frame_label = customtkinter.CTkLabel(register_frame, text="Nazwa użytkownika:", width=120, height=25)
+        register_frame_label.grid(row=1, column=0, padx=10, pady=10)
+
+        register_frame_username = customtkinter.CTkEntry(register_frame, width=200,
+                                                         placeholder_text="Nazwa użytkownika")
+        register_frame_username.grid(row=2, column=0, padx=10, pady=10)
+
+        register_frame_label = customtkinter.CTkLabel(register_frame, text="Kod PIN:", width=120, height=25)
+        register_frame_label.grid(row=3, column=0, padx=10, pady=10)
+
+        register_frame_pin = customtkinter.CTkEntry(register_frame, width=200, placeholder_text="Pin", show="*")
+        register_frame_pin.grid(row=4, column=0, padx=10, pady=10)
+
+        register_frame_label = customtkinter.CTkLabel(register_frame, text="Powtórz kod PIN:", width=120, height=25)
+        register_frame_label.grid(row=5, column=0, padx=10, pady=10)
+
+        register_frame_pin_repeat = customtkinter.CTkEntry(register_frame, width=200, placeholder_text="Powtórz Pin",
+                                                           show="*")
+        register_frame_pin_repeat.grid(row=6, column=0, padx=10, pady=10)
+        # </editor-fold>
+
+        disclaimer_label = customtkinter.CTkLabel(register_frame,
+                                                  text="Uwaga: PIN musi mieć co najmniej 4 znaki i może zawierać tylko cyfry. Nie ma możliwości odzyskania PIN-u, więc pamiętaj o nim!",
+                                                  text_color="red", wraplength=600)
+        disclaimer_label.grid(row=8, column=0, padx=10, pady=10)
+
+        def register_handle():
+            username = register_frame_username.get()
+            pin = register_frame_pin.get()
+            pin_repeat = register_frame_pin_repeat.get()
+
+            # <editor-fold desc="Validate pin">
+            if pin != pin_repeat:
+                messagebox.showerror("Błąd", "Podane PIN-y nie są takie same!")
+                return
+
+            if len(pin) < 4:
+                messagebox.showerror("Błąd", "PIN musi mieć co najmniej 4 znaki!")
+                return
+
+            if not pin.isdigit():
+                messagebox.showerror("Błąd", "PIN może zawierać tylko cyfry!")
+                return
+
+            if len(username) < 4:
+                messagebox.showerror("Błąd", "Nazwa użytkownika musi mieć co najmniej 4 znaki!")
+                return
+            # </editor-fold>
+
+            create_user(username, pin)
+            messagebox.showinfo("Sukces", "Użytkownik został utworzony!")
+
+            # <editor-fold desc="Clear fields">
+            register_frame_username.delete(0, "end")
+            register_frame_pin.delete(0, "end")
+            register_frame_pin_repeat.delete(0, "end")
+            register_frame_username.focus_set()
+            # </editor-fold>
+
+            self.switch_frame("login")
+
+        register_frame_button = customtkinter.CTkButton(register_frame, text="Zarejestruj", width=200,
+                                                        command=register_handle)
+        register_frame_button.grid(row=9, column=0, padx=10, pady=10)
+
+        return register_frame
+
+    def reload_user_list(self):
+        users = fetch_users()
+        self.user_list.clear()
+        for user in users:
+            self.user_list.add_item(user, image=self.user_image)
+
+    def switch_frame(self, name):
         # set button color for selected button
         self.login_button.configure(fg_color=("gray75", "gray25") if name == "login" else "transparent")
         self.register_button.configure(fg_color=("gray75", "gray25") if name == "register" else "transparent")
@@ -213,6 +300,7 @@ class App(customtkinter.CTk):
 
         # show selected frame
         if name == "login":
+            self.reload_user_list()
             self.login_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.login_frame.grid_forget()
@@ -224,18 +312,6 @@ class App(customtkinter.CTk):
             self.about_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.about_frame.grid_forget()
-
-    def login_button_event(self):
-        self.select_frame_by_name("login")
-
-    def register_button_event(self):
-        self.select_frame_by_name("register")
-
-    def about_button_event(self):
-        self.select_frame_by_name("about")
-
-    def exit_button_event(self):
-        self.destroy()
 
 
 if __name__ == "__main__":
