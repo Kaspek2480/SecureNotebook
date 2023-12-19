@@ -1,4 +1,6 @@
 import os
+from datetime import datetime
+
 from PIL import Image
 from tkinter import messagebox
 
@@ -13,6 +15,7 @@ dashboard_star_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-star-100.png")), size=(15, 15))
 dashboard_star_filled_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-filled-star-100.png")), size=(15, 15))
+
 
 def open_pin_dialog(title):
     pin_storage = {'user_pin': None}
@@ -56,3 +59,15 @@ def open_pin_dialog(title):
 
     pin_dialog.wait_window(pin_dialog)
     return pin_storage['user_pin']
+
+
+def timestamp_to_date(timestamp):
+    if timestamp is None:
+        return "Nigdy"
+    # Convert the timestamp to a datetime object
+    dt_object = datetime.fromtimestamp(timestamp)
+
+    # Format the datetime object as a string
+    date_string = dt_object.strftime("%Y-%m-%d %H:%M:%S")
+
+    return date_string

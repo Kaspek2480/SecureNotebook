@@ -27,15 +27,35 @@ class NoteList(customtkinter.CTkScrollableFrame):
         self.label_list = []
         self.button_list = []
 
+        self.add_labels()
+
+    def add_labels(self):
+        label = customtkinter.CTkLabel(self, text="  Tytuł", padx=5, pady=5, anchor="w")
+        label2 = customtkinter.CTkLabel(self, text="Ostatnia edycja", padx=5, pady=5, anchor="w")
+        empty_separator = customtkinter.CTkLabel(self, text="", padx=5, pady=5, anchor="w")
+        # label3 = customtkinter.CTkLabel(self, text="AAAAAAAA", padx=5, pady=5, anchor="w")
+
+        label.grid(row=0, column=0, pady=(10, 10), sticky="w")
+        label2.grid(row=0, column=1, pady=(10, 10), sticky="w")
+        empty_separator.grid(row=0, column=2, pady=(10, 10), sticky="w")
+        # label3.grid(row=0, column=3, pady=(10, 5), sticky="w")
+
+        self.label_list.append(label)
+        self.button_list.append(label2)
+
     def add_item(self, note_obj, image=None):
         # note_id=1, title="Test"
         note_id = note_obj.note_id
         title = note_obj.title
         is_favorite = note_obj.favorite
+        last_modify_timestamp = note_obj.last_modify_timestamp
 
         label = customtkinter.CTkLabel(self, text="  " + title, image=image, compound="left", padx=5, pady=5,
                                        anchor="w")
-        label.grid(row=len(self.label_list), column=0, pady=(10, 20), sticky="w")  # Increased padding for each item
+        label2 = customtkinter.CTkLabel(self, text=timestamp_to_date(last_modify_timestamp), image=image,
+                                        compound="left", padx=5, pady=5, anchor="w")
+        empty_separator = customtkinter.CTkLabel(self, text="", padx=5, pady=5, anchor="w")
+        empty_separator2 = customtkinter.CTkLabel(self, text="", padx=2, pady=2, anchor="w")
 
         star_note_button = customtkinter.CTkButton(self, text="", width=15, height=24, border_color="gray70",
                                                    border_width=1, fg_color="transparent",
@@ -55,13 +75,14 @@ class NoteList(customtkinter.CTkScrollableFrame):
                                                    hover_color=("gray70", "gray30"),
                                                    command=lambda: self.edit_command(note_obj))
 
-        # edit_note_button.grid(row=len(self.button_list), column=2, pady=(10, 20), padx=2)
-        # star_note_button.grid(row=len(self.button_list), column=1, pady=(10, 20), padx=2)
-        # delete_note_button.grid(row=len(self.button_list), column=3, pady=(10, 20), padx=2)
+        label.grid(row=len(self.label_list), column=0, pady=(10, 20), sticky="w")  # Increased padding for each item
+        label2.grid(row=len(self.label_list), column=1, pady=(10, 20), sticky="w")
+        empty_separator.grid(row=len(self.label_list), column=2, pady=(10, 20), sticky="w")
 
-        edit_note_button.grid(row=len(self.button_list), column=2, pady=(10, 20), padx=2)
-        star_note_button.grid(row=len(self.button_list), column=1, pady=(10, 20), padx=2)
-        delete_note_button.grid(row=len(self.button_list), column=3, pady=(10, 20), padx=2)
+        star_note_button.grid(row=len(self.button_list), column=3, pady=(10, 20), padx=2)
+        edit_note_button.grid(row=len(self.button_list), column=4, pady=(10, 20), padx=2)
+        delete_note_button.grid(row=len(self.button_list), column=5, pady=(10, 20), padx=2)
+        empty_separator2.grid(row=len(self.button_list), column=6, pady=(10, 20), sticky="w")
 
         self.label_list.append(label)
         self.button_list.append(star_note_button)
@@ -83,6 +104,8 @@ class NoteList(customtkinter.CTkScrollableFrame):
             button.destroy()
         self.label_list.clear()
         self.button_list.clear()
+
+        self.add_labels()
 
 
 class Dashboard(customtkinter.CTk):
@@ -195,7 +218,13 @@ class Dashboard(customtkinter.CTk):
             print("edit_impl")
 
         def delete_impl(note):
+            # ask user if he is sure
+            if not messagebox.askyesno("Usuwanie notatki", "Czy na pewno chcesz usunąć tą notatkę?"):
+                return
+
+            # delete note
             print("delete_impl")
+
 
         self.note_list = NoteList(master=user_notes_frame, width=600, height=400, corner_radius=0,
                                   fav_command=star_impl, edit_command=edit_impl, delete_command=delete_impl)
