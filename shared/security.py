@@ -60,16 +60,3 @@ def create_pin_hash(pin):
     iv = key_pair['iv']
     pin_hash = sha256((key + iv).hex())
     return pin_hash
-
-
-if __name__ == "__main__":
-    key_pair = calculate_key("test")
-    key = key_pair['key']
-    iv = key_pair['iv']
-
-    plaintext = b'your_text_here'
-
-    enc_text = encrypt_text(key, iv, plaintext)
-    print("Encrypted text:", enc_text.hex())
-    dec_text = decrypt_text(key, iv, enc_text)
-    print("Decrypted text:", dec_text)

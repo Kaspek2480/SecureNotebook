@@ -13,7 +13,6 @@ print("Database file: " + db_file)
 
 engine = create_engine('sqlite:///' + db_file, echo=False)
 conn = engine.connect()
-print(f"Connected to database: {conn}")
 
 Base = declarative_base()
 

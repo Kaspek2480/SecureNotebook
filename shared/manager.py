@@ -128,6 +128,11 @@ def update_note(note):
     session.close()
 
 
+def change_note_favorite(note, favorite):
+    note.favorite = favorite
+    update_note(note)
+
+
 def verify_user_pin(user, pin):
     return user.pin_hash == create_pin_hash(pin)
 

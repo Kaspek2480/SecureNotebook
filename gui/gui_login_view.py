@@ -4,13 +4,10 @@ from os.path import abspath, dirname
 # Add the 'shared' directory to the Python path
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-import os
-
-from PIL import Image
-
 from shared.database import init
 from shared.manager import *
 from gui.gui_utils import *
+from gui.gui_dashboard import *
 
 input_pin = None
 
@@ -26,26 +23,16 @@ class UserList(customtkinter.CTkScrollableFrame):
         self.button_list = []
 
     def add_item(self, user_obj, image=None):
-        user_id = user_obj.user_id
-        user_name = user_obj.display_name
-
-        def pin_verify():
-            while True:
-                pin = open_pin_dialog(f"Podaj PIN dla użytkownika {user_name}")
-                if pin is None:
-                    return
-
-                if not verify_user_pin(user_obj, pin):
-                    messagebox.showerror("Błąd", "Nieprawidłowy PIN!")
-                    continue
-
-                print("PIN verified")
-                break
+        user = user_obj
+        user_id = user.user_id
+        user_name = user.display_name
 
         label = customtkinter.CTkLabel(self, text=user_name, image=image, compound="left", padx=5, anchor="w")
         button = customtkinter.CTkButton(self, text="Zaloguj", width=60, height=24, border_color="gray70",
                                          border_width=1, fg_color="transparent", text_color=("gray10", "gray90"),
-                                         hover_color=("gray70", "gray30"), command=pin_verify)
+                                         hover_color=("gray70", "gray30"))
+        if self.command is not None:
+            button.configure(command=lambda: self.command(user))
 
         label.grid(row=len(self.label_list), column=0, pady=(10, 20), sticky="w")  # Increased padding for each item
         button.grid(row=len(self.button_list), column=1, pady=(10, 20), padx=5)  # Increased padding for each item
@@ -75,10 +62,11 @@ class App(customtkinter.CTk):
 
         self.user_list = None
         self.user_pin = None
-        self.iconbitmap("resources/app_icon.ico")
+        self.iconbitmap("resources/icons8-secure-100.ico")
 
         self.title("Secure Notebook - Twoje bezpieczne notatki")
-        self.geometry("1000x600")
+        self.geometry("900x600")
+        self.resizable(False, False)
 
         # set grid layout 1x2
         self.grid_rowconfigure(0, weight=1)
@@ -86,8 +74,9 @@ class App(customtkinter.CTk):
 
         # <editor-fold desc="load images">
         image_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources")
-        self.logo_image = customtkinter.CTkImage(dark_image=Image.open(os.path.join(image_path, "app_icon.png")),
-                                                 size=(26, 26))
+        self.logo_image = customtkinter.CTkImage(
+            dark_image=Image.open(os.path.join(image_path, "icons8-secure-100.ico")),
+            size=(26, 26))
         self.login_image = customtkinter.CTkImage(dark_image=Image.open(os.path.join(image_path, "login/login.png")),
                                                   size=(20, 20))
         self.register_image = customtkinter.CTkImage(
@@ -112,7 +101,8 @@ class App(customtkinter.CTk):
         self.navigation_frame_label = customtkinter.CTkLabel(self.navigation_frame, text=" Secure Notebook",
                                                              image=self.logo_image,
                                                              compound="left",
-                                                             font=customtkinter.CTkFont(size=15, weight="bold"))
+                                                             font=customtkinter.CTkFont(size=15, weight="bold"),
+                                                             padx=10, pady=10)
         self.navigation_frame_label.grid(row=0, column=0, padx=20, pady=20)
 
         # <editor-fold desc="navigation buttons">
@@ -166,7 +156,7 @@ class App(customtkinter.CTk):
 
         main_label_font = customtkinter.CTkFont(family="Helvetica", size=23, weight="bold")  # enlarging main text font
         main_info_label = customtkinter.CTkLabel(about_frame,
-                                                 text="Witaj w SecureNotebook - bezpiecznym miejscu na Twoje notatki!",
+                                                 text="Secure Notebook - Twoje bezpieczne notatki",
                                                  font=main_label_font, width=120, height=25)
         main_info_label.grid(row=0, column=0, padx=20, pady=20)
 
@@ -202,7 +192,29 @@ class App(customtkinter.CTk):
                                                  font=main_label_font, width=120, height=25)
         main_info_label.grid(row=0, column=0, padx=20, pady=20)
 
-        self.user_list = UserList(master=login_frame, width=700, height=400, corner_radius=0)
+        def pin_verify_impl(user):
+            print(f"Selected user: {user.display_name}")
+
+            while True:
+                pin = open_pin_dialog(f"Podaj PIN dla użytkownika {user.display_name}")
+                if pin is None:
+                    return
+
+                if not verify_user_pin(user, pin):
+                    messagebox.showerror("Błąd", "Nieprawidłowy PIN!")
+                    continue
+
+                print("PIN verified")
+                initialize_user(user, pin)
+
+                # switch to gui_dashboard_view
+                self.destroy()
+                dashboard_app = Dashboard(user, self)
+                dashboard_app.mainloop()
+
+                break
+
+        self.user_list = UserList(master=login_frame, width=600, height=400, corner_radius=0, command=pin_verify_impl)
         self.user_list.place(relx=0.5, rely=0.5, anchor='center')
 
         return login_frame
@@ -219,31 +231,31 @@ class App(customtkinter.CTk):
         main_info_label.grid(row=0, column=0, padx=20, pady=20)
 
         # <editor-fold desc="Base labels">
-        register_frame_label = customtkinter.CTkLabel(register_frame, text="Nazwa użytkownika:", width=120, height=25)
-        register_frame_label.grid(row=1, column=0, padx=10, pady=10)
+        register_frame_label = customtkinter.CTkLabel(register_frame, text="Nazwa użytkownika:", width=120, height=20)
+        register_frame_label.grid(row=1, column=0, padx=5, pady=5)
 
         register_frame_username = customtkinter.CTkEntry(register_frame, width=200,
                                                          placeholder_text="Nazwa użytkownika")
-        register_frame_username.grid(row=2, column=0, padx=10, pady=10)
+        register_frame_username.grid(row=2, column=0, padx=5, pady=5)
 
         register_frame_label = customtkinter.CTkLabel(register_frame, text="Kod PIN:", width=120, height=25)
-        register_frame_label.grid(row=3, column=0, padx=10, pady=10)
+        register_frame_label.grid(row=3, column=0, padx=5, pady=5)
 
         register_frame_pin = customtkinter.CTkEntry(register_frame, width=200, placeholder_text="Pin", show="*")
-        register_frame_pin.grid(row=4, column=0, padx=10, pady=10)
+        register_frame_pin.grid(row=4, column=0, padx=5, pady=5)
 
         register_frame_label = customtkinter.CTkLabel(register_frame, text="Powtórz kod PIN:", width=120, height=25)
-        register_frame_label.grid(row=5, column=0, padx=10, pady=10)
+        register_frame_label.grid(row=5, column=0, padx=5, pady=5)
 
         register_frame_pin_repeat = customtkinter.CTkEntry(register_frame, width=200, placeholder_text="Powtórz Pin",
                                                            show="*")
-        register_frame_pin_repeat.grid(row=6, column=0, padx=10, pady=10)
+        register_frame_pin_repeat.grid(row=6, column=0, padx=5, pady=5)
         # </editor-fold>
 
         disclaimer_label = customtkinter.CTkLabel(register_frame,
                                                   text="Uwaga: PIN musi mieć co najmniej 4 znaki i może zawierać tylko cyfry. Nie ma możliwości odzyskania PIN-u, więc pamiętaj o nim!",
                                                   text_color="red", wraplength=600)
-        disclaimer_label.grid(row=8, column=0, padx=10, pady=10)
+        disclaimer_label.grid(row=8, column=0, padx=50, pady=50)
 
         def register_handle():
             username = register_frame_username.get()
@@ -280,7 +292,7 @@ class App(customtkinter.CTk):
 
             self.switch_frame("login")
 
-        register_frame_button = customtkinter.CTkButton(register_frame, text="Zarejestruj", width=200,
+        register_frame_button = customtkinter.CTkButton(register_frame, text="Zarejestruj", width=100,
                                                         command=register_handle)
         register_frame_button.grid(row=9, column=0, padx=10, pady=10)
 

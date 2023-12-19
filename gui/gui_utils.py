@@ -1,7 +1,18 @@
+import os
+from PIL import Image
 from tkinter import messagebox
 
 import customtkinter
 
+resource_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources")
+dashboard_delete_note_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-remove-100.png")), size=(15, 15))
+dashboard_edit_note_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-edit-100.png")), size=(15, 15))
+dashboard_star_note_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-star-100.png")), size=(15, 15))
+dashboard_star_filled_note_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-filled-star-100.png")), size=(15, 15))
 
 def open_pin_dialog(title):
     pin_storage = {'user_pin': None}
