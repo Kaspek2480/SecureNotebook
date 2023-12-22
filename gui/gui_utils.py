@@ -15,6 +15,11 @@ dashboard_star_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-star-100.png")), size=(15, 15))
 dashboard_star_filled_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-filled-star-100.png")), size=(15, 15))
+dashboard_save_file_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-save-96.png")), size=(15, 15))
+secure_notebook_logo = customtkinter.CTkImage(
+            dark_image=Image.open(os.path.join(resource_path, "icons8-secure-100.ico")),
+            size=(26, 26))
 
 
 def get_user_input(dialog_title, label_text):

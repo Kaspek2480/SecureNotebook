@@ -99,7 +99,7 @@ class App(customtkinter.CTk):
         self.about_frame = self.create_about_frame()
 
         self.navigation_frame_label = customtkinter.CTkLabel(self.navigation_frame, text=" Secure Notebook",
-                                                             image=self.logo_image,
+                                                             image=secure_notebook_logo,
                                                              compound="left",
                                                              font=customtkinter.CTkFont(size=15, weight="bold"),
                                                              padx=10, pady=10)
