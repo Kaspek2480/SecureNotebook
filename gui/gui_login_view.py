@@ -62,7 +62,7 @@ class App(customtkinter.CTk):
 
         self.user_list = None
         self.user_pin = None
-        self.iconbitmap("resources/icons8-secure-100.ico")
+        self.iconbitmap(logo_image_path)
 
         self.title("Secure Notebook - Twoje bezpieczne notatki")
         self.geometry("900x600")
@@ -140,11 +140,11 @@ class App(customtkinter.CTk):
         # </editor-fold>
 
         # Label for displaying login status
-        self.login_status_label = customtkinter.CTkLabel(self.navigation_frame, text="Not Logged In",
-                                                         fg_color="transparent",
-                                                         text_color=("gray10", "gray90"),
-                                                         font=customtkinter.CTkFont(size=12))
-        self.login_status_label.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+        # self.login_status_label = customtkinter.CTkLabel(self.navigation_frame, text="Not Logged In",
+        #                                                  fg_color="transparent",
+        #                                                  text_color=("gray10", "gray90"),
+        #                                                  font=customtkinter.CTkFont(size=12))
+        # self.login_status_label.grid(row=6, column=0, padx=20, pady=20, sticky="s")
 
         # default frame
         self.switch_frame("login")
@@ -208,9 +208,7 @@ class App(customtkinter.CTk):
 
                 # switch to gui_dashboard_view
                 self.hide_login_screen()
-                dashboard_app = Dashboard(user, self)
-
-                print("Dashboard closed")
+                dashboard_app = Dashboard(user, self, exit_callback=self.show_login_screen)
                 break
 
         self.user_list = UserList(master=login_frame, width=600, height=400, corner_radius=0, command=pin_verify_impl)
@@ -314,6 +312,7 @@ class App(customtkinter.CTk):
         self.login_frame.grid(row=0, column=1, sticky="nsew")
         self.register_frame.grid(row=0, column=1, sticky="nsew")
         self.about_frame.grid(row=0, column=1, sticky="nsew")
+        self.switch_frame("login")
 
     def switch_frame(self, name):
         # set button color for selected button

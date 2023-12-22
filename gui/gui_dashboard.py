@@ -103,12 +103,13 @@ class NoteList(customtkinter.CTkScrollableFrame):
 
 
 class Dashboard:
-    def __init__(self, user, root):
+    def __init__(self, user, root, exit_callback=None):
         super().__init__()
 
         self.user_notes_frame = None
         self.user_obj = user
         self.root = root
+        self.logout_callback = exit_callback
 
         self.note_list = None
         # root.iconbitmap("resources/icons8-secure-100.ico")
@@ -179,11 +180,11 @@ class Dashboard:
         # self.user_profile_button.grid(row=3, column=0, sticky="ew")
 
         self.logout_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
-                                                     border_spacing=10, text="Wyjdź",
+                                                     border_spacing=10, text="Wyloguj",
                                                      fg_color="transparent", text_color=("gray10", "gray90"),
                                                      hover_color=("gray70", "gray30"),
                                                      image=self.logout_image, anchor="w",
-                                                     command=self.root.destroy)
+                                                     command=self.logout_impl)
         self.logout_button.grid(row=4, column=0, sticky="ew")
         # </editor-fold>
 
@@ -215,7 +216,11 @@ class Dashboard:
         self.reload_notes()
 
     def edit_impl(self, note):
-        editor = NoteEditor(note, self.root)
+        def exit_callback():
+            print("Editor closed")
+            self.reload_notes()
+
+        editor = NoteEditor(note, exit_callback, self.root)
         editor.grab_set()
         editor.after(100, editor.lift)  # Workaround for bug where main window takes focus
         editor.after(100, editor.focus_force)  # Workaround for bug where main window takes focus
@@ -245,6 +250,14 @@ class Dashboard:
         # set color back to default
         self.add_note_button.configure(fg_color="transparent")
         self.user_notes_button.configure(fg_color=("gray75", "gray25"))
+
+    def logout_impl(self):
+        self.navigation_frame.destroy()
+        self.user_notes_frame.destroy()
+        self.user_navbar_label.destroy()
+
+        if self.logout_callback is not None:
+            self.logout_callback()
 
     def reload_notes(self):
 

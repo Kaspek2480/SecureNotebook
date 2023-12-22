@@ -7,6 +7,7 @@ from tkinter import messagebox
 import customtkinter
 
 resource_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources")
+logo_image_path = os.path.join(resource_path, "icons8-secure-100.ico")
 dashboard_delete_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-remove-100.png")), size=(15, 15))
 dashboard_edit_note_icon = customtkinter.CTkImage(
@@ -42,6 +43,8 @@ def get_user_input(dialog_title, label_text, password=False):
     pin_dialog = customtkinter.CTkToplevel()
     pin_dialog.title(dialog_title)
     pin_dialog.geometry("300x200")
+    # pin_dialog.resizable(False, False)
+    pin_dialog.iconbitmap(logo_image_path)
 
     pin_label = customtkinter.CTkLabel(pin_dialog, text=label_text,
                                        font=customtkinter.CTkFont(size=14))
@@ -61,11 +64,11 @@ def get_user_input(dialog_title, label_text, password=False):
     pin_dialog.bind('<Escape>', lambda event: pin_dialog.destroy())
 
     pin_dialog.update_idletasks()
-    # screen_width = pin_dialog.winfo_screenwidth()
-    # screen_height = pin_dialog.winfo_screenheight()
-    # x = (screen_width - pin_dialog.winfo_width()) // 2
-    # y = (screen_height - pin_dialog.winfo_height()) // 2
-    # pin_dialog.geometry("+{}+{}".format(x, y))
+    screen_width = pin_dialog.winfo_screenwidth()
+    screen_height = pin_dialog.winfo_screenheight()
+    x = (screen_width - pin_dialog.winfo_width()) // 2
+    y = (screen_height - pin_dialog.winfo_height()) // 2
+    pin_dialog.geometry("+{}+{}".format(x, y))
 
     pin_dialog.wait_window(pin_dialog)
     return pin_storage['user_pin']

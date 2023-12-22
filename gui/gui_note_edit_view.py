@@ -8,11 +8,12 @@ from shared.manager import *
 
 
 class NoteEditor(customtkinter.CTkToplevel):
-    def __init__(self, note_obj, *args, **kwargsj):
+    def __init__(self, note_obj, exit_callback=None, *args, **kwargsj):
         super().__init__(*args, **kwargsj)
 
-        self.iconbitmap("resources/icons8-secure-100.ico")
+        self.iconbitmap(logo_image_path)
         self.note_obj = note_obj
+        self.exit_callback = exit_callback
         self.note_content_before_edits = note_obj.content
         self.text_edited = False
 
@@ -98,10 +99,8 @@ class NoteEditor(customtkinter.CTkToplevel):
 
     # restore all changes made to note content
     # but not save it to database - user decides if he wants to save changes or not
-
     def get_note_textbox_content(self):
         note_text = self.textbox.get('1.0', "end-1c")
-        print(f"Note text: {note_text}")
         return note_text
 
     def set_note_text(self, text):
@@ -126,13 +125,14 @@ class NoteEditor(customtkinter.CTkToplevel):
 
     def handle_user_exit(self):
         if self.text_edited:
-            if messagebox.askyesno("Zmiany nie zostały zapisane",
-                                   "Czy na pewno chcesz zamknąć okno i porzucić zmiany?"):
-                self.destroy()
-            else:
+            if not messagebox.askyesno("Zmiany nie zostały zapisane",
+                                       "Czy na pewno chcesz zamknąć okno i porzucić zmiany?"):
                 self.regain_focus()
-        else:
-            self.destroy()
+                return
+
+        self.close()
+        if self.exit_callback is not None:
+            self.exit_callback()
 
     def regain_focus(self):
         self.after(100, self.lift)
