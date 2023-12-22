@@ -17,22 +17,22 @@ dashboard_star_filled_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-filled-star-100.png")), size=(15, 15))
 
 
-def open_pin_dialog(title):
+def get_user_input(dialog_title, label_text):
     pin_storage = {'user_pin': None}
 
     def verify_pin(pin):
         if pin == "":
-            messagebox.showerror("Error", "PIN cannot be empty")
+            messagebox.showerror("Błąd", "Podaj wartość")
             return
         pin_storage['user_pin'] = pin
         pin_dialog.grab_release()
         pin_dialog.destroy()
 
     pin_dialog = customtkinter.CTkToplevel()
-    pin_dialog.title("Enter PIN")
+    pin_dialog.title(dialog_title)
     pin_dialog.geometry("300x200")
 
-    pin_label = customtkinter.CTkLabel(pin_dialog, text=title,
+    pin_label = customtkinter.CTkLabel(pin_dialog, text=label_text,
                                        font=customtkinter.CTkFont(size=14))
     pin_label.pack(expand=True)
 
@@ -43,7 +43,7 @@ def open_pin_dialog(title):
     pin_dialog.focus_force()
     pin_entry.focus_force()
 
-    submit_button = customtkinter.CTkButton(pin_dialog, text="Submit",
+    submit_button = customtkinter.CTkButton(pin_dialog, text="Potwierdź",
                                             command=lambda: verify_pin(pin_entry.get()))
     submit_button.pack(expand=True)
 

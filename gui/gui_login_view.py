@@ -196,7 +196,7 @@ class App(customtkinter.CTk):
             print(f"Selected user: {user.display_name}")
 
             while True:
-                pin = open_pin_dialog(f"Podaj PIN dla użytkownika {user.display_name}")
+                pin = get_user_input("Podaj PIN", f"Podaj PIN dla użytkownika {user.display_name}")
                 if pin is None:
                     return
 
@@ -212,6 +212,7 @@ class App(customtkinter.CTk):
                 dashboard_app = Dashboard(user, self)
                 dashboard_app.mainloop()
 
+                print("Dashboard closed")
                 break
 
         self.user_list = UserList(master=login_frame, width=600, height=400, corner_radius=0, command=pin_verify_impl)
