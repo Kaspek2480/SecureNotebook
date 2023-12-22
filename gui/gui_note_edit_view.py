@@ -1,16 +1,18 @@
 from tkinter import *
-import customtkinter
+import tkinter as tk
+from PIL import Image, ImageTk
 
-from shared.database import Note
 from gui.gui_utils import *
+from shared.database import Note
 
 
-class NoteEditor(customtkinter.CTk):
-    def __init__(self, note_obj):
-        super().__init__()
+class NoteEditor(customtkinter.CTkToplevel):
+    def __init__(self, note_obj, *args, **kwargsj):
+        super().__init__(*args, **kwargsj)
 
-        # self.iconbitmap("resources/icons8-secure-100.ico")
+        self.iconbitmap("resources/icons8-secure-100.ico")
         self.note_obj = note_obj
+        self.note_content_before_edits = note_obj.content
         self.text_edited = False
 
         self.title(self.get_title_bar())
@@ -19,6 +21,9 @@ class NoteEditor(customtkinter.CTk):
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
+
+        # bind user exit protocol
+        self.protocol("WM_DELETE_WINDOW", self.handle_user_exit)
 
         # create navigation frame
         self.navigation_frame = customtkinter.CTkFrame(self, corner_radius=0)
@@ -36,8 +41,6 @@ class NoteEditor(customtkinter.CTk):
                                                 fg_color="transparent")
         self.textbox.grid(row=0, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
         self.textbox.insert("1.0", self.note_obj.content)
-        self.textbox.focus_force()
-        self.textbox.bind('<Escape>', lambda event: self.destroy())
         self.textbox.bind('<Control-s>', lambda event: self.save_note())
         self.textbox.bind('<Control-S>', lambda event: self.save_note())
         # trace if user changes text in textbox
@@ -51,35 +54,23 @@ class NoteEditor(customtkinter.CTk):
                                                     image=dashboard_save_file_icon, anchor="w",
                                                     command=self.save_note)
         self.login_button.grid(row=1, column=0, sticky="ew")
-        # </editor-fold>
 
-        # self.radiobutton_frame = customtkinter.CTkFrame(self, width=100, height=100, border_color="gray70", bg_color="transparent", border_width=1)
-        # self.radiobutton_frame.grid(row=2, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
-        #
-        # self.save_button = customtkinter.CTkButton(self.radiobutton_frame, text="Zapisz", width=10, height=10, border_color="gray70",
-        #                                            border_width=1, fg_color="transparent",
-        #                                            text_color=("gray10", "gray90"),
-        #                                            hover_color=("gray70", "gray30"),
-        #                                            command=self.save_note)
-        # self.save_button.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
-        # self.save_button.place(relx=0.5, rely=0.5, anchor='center')
-        #
-        # self.cancel_button = customtkinter.CTkButton(self.radiobutton_frame, text="Anuluj", width=10, height=10, border_color="gray70",
-        #                                              border_width=1, fg_color="transparent",
-        #                                              text_color=("gray10", "gray90"),
-        #                                              hover_color=("gray70", "gray30"),
-        #                                              command=self.destroy)
-        # self.cancel_button.grid(row=1, column=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
-        # self.cancel_button.place(relx=0.5, rely=0.5, anchor='center')
-        #
-        # self.update_idletasks()
-        # # screen_width = self.winfo_screenwidth()
-        # # screen_height = self.winfo_screenheight()
-        # # x = (screen_width - self.winfo_width()) // 2
-        # # y = (screen_height - self.winfo_height()) // 2
-        # # self.geometry("+{}+{}".format(x, y))
-        #
-        # self.protocol("WM_DELETE_WINDOW", self.destroy)
+        self.rollback_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
+                                                       border_spacing=10, text="Cofnij zmiany",
+                                                       fg_color="transparent", text_color=("gray10", "gray90"),
+                                                       hover_color=("gray70", "gray30"),
+                                                       image=dashboard_rollback_icon, anchor="w",
+                                                       command=self.handle_note_revert)
+        self.rollback_button.grid(row=2, column=0, sticky="ew")
+
+        self.exit_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
+                                                   border_spacing=10, text="Zamknij",
+                                                   fg_color="transparent", text_color=("gray10", "gray90"),
+                                                   hover_color=("gray70", "gray30"),
+                                                   image=exit_icon_ios, anchor="w",
+                                                   command=self.handle_user_exit)
+        self.exit_button.grid(row=3, column=0, sticky="ew")
+        # </editor-fold>
 
     def save_note(self):
         self.text_edited = False
@@ -91,7 +82,7 @@ class NoteEditor(customtkinter.CTk):
             self.title(self.get_title_bar())
 
     def close(self):
-        self.note_text.destroy()
+        self.textbox.destroy()
         super().destroy()
 
     def get_title_bar(self):
@@ -100,12 +91,52 @@ class NoteEditor(customtkinter.CTk):
         else:
             return f"{self.note_obj.title} - SecureNotebook"
 
-    def get_note_text(self):
-        print(self.textbox.get('1.0', END))
+    # restore all changes made to note content
+    # but not save it to database - user decides if he wants to save changes or not
+
+    def get_note_textbox_content(self):
+        note_text = self.textbox.get('1.0', "end-1c")
+        print(f"Note text: {note_text}")
+        return note_text
+
+    def set_note_text(self, text):
+        self.textbox.insert("1.0", text)
+
+    def handle_note_revert(self):
+        # check if note content was changed
+        if self.get_note_textbox_content() == self.note_content_before_edits:
+            return
+
+        if not messagebox.askyesno("Cofnij zmiany",
+                                   "Za chwilę cofniesz wszystkie zmiany do momentu uruchomienia okna edycji notatki. "
+                                   "Czy chcesz kontynuować?"):
+            self.regain_focus()
+            return
+
+        self.textbox.delete("1.0", END)
+        self.textbox.insert("1.0", self.note_content_before_edits)
+        self.text_edited = True
+        self.title(self.get_title_bar())
+
+    def handle_user_exit(self):
+        if self.text_edited:
+            if messagebox.askyesno("Zmiany nie zostały zapisane",
+                                   "Czy na pewno chcesz zamknąć okno i porzucić zmiany?"):
+                self.destroy()
+            else:
+                self.regain_focus()
+        else:
+            self.destroy()
+
+    def regain_focus(self):
+        self.after(100, self.lift)
+        self.focus_set()
+        self.textbox.focus_force()
 
 
 if __name__ == "__main__":
     n = Note(title="Test", content="XD")
     print(n)
+
     note_editor = NoteEditor(n)
     note_editor.mainloop()

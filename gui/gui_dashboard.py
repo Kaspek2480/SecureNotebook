@@ -7,6 +7,7 @@ from PIL import Image
 
 from CTkTable import *
 
+from gui.gui_note_edit_view import NoteEditor
 # from gui.gui_login_view import App
 from shared.database import init
 from shared.manager import *
@@ -223,7 +224,11 @@ class Dashboard(customtkinter.CTk):
             self.reload_notes()
 
         def edit_impl(note):
-            print("edit_impl")
+            editor = NoteEditor(note, self)
+            editor.grab_set()
+            editor.after(100, editor.lift)  # Workaround for bug where main window takes focus
+            editor.after(100, editor.focus_force)  # Workaround for bug where main window takes focus
+            editor.after(100, editor.textbox.focus)  # Workaround for bug where main window takes focus
 
         def delete_impl(note):
             # ask user if he is sure
@@ -236,9 +241,6 @@ class Dashboard(customtkinter.CTk):
         self.note_list = NoteList(master=user_notes_frame, width=600, height=400, corner_radius=0,
                                   fav_command=star_impl, edit_command=edit_impl, delete_command=delete_impl)
         self.note_list.place(relx=0.5, rely=0.5, anchor='center')
-
-        # note = Note(title="Test", content="Test")
-        # self.note_list.add_item(note)
 
         return user_notes_frame
 
@@ -287,14 +289,13 @@ class Dashboard(customtkinter.CTk):
 
     def switch_frame(self, name: str):
         # set button color for selected button
-        self.add_note_button.configure(fg_color=("gray75", "gray25") if name == "add_note" else "transparent")
-        self.user_notes_button.configure(fg_color=("gray75", "gray25") if name == "user_notes" else "transparent")
-        # self.user_profile_button.configure(fg_color=("gray75", "gray25") if name == "user_profile" else "transparent")
+        self.user_notes_button.configure(fg_color=("gray75", "gray25"))
 
         # show selected frame
         if name == "add_note":
-            # self.add_note_frame.grid(row=0, column=1, sticky="nsew")
             user_input = get_user_input("Dodawanie notatki", "Podaj tytuł notatki")
+            if user_input is None or user_input == "":
+                return
         else:
             self.add_note_frame.grid_forget()
 
@@ -303,11 +304,6 @@ class Dashboard(customtkinter.CTk):
             self.home_frame.grid(row=0, column=1, sticky="nsew")
         else:
             self.home_frame.grid_forget()
-
-        # if name == "user_profile":
-        #     self.user_profile_frame.grid(row=0, column=1, sticky="nsew")
-        # else:
-        #     self.user_profile_frame.grid_forget()
 
         if name == "logout":
             self.destroy()

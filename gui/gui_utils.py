@@ -16,10 +16,16 @@ dashboard_star_note_icon = customtkinter.CTkImage(
 dashboard_star_filled_note_icon = customtkinter.CTkImage(
     dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-filled-star-100.png")), size=(15, 15))
 dashboard_save_file_icon = customtkinter.CTkImage(
-    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-save-96.png")), size=(15, 15))
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-save-100.png")), size=(20, 20))
+dashboard_rollback_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-rollback-100.png")), size=(20, 20))
+exit_icon = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "login/icons8-exit-48.png")), size=(20, 20))
+exit_icon_ios = customtkinter.CTkImage(
+    dark_image=Image.open(os.path.join(resource_path, "dashboard/icons8-ios-exit-100.png")), size=(20, 20))
 secure_notebook_logo = customtkinter.CTkImage(
-            dark_image=Image.open(os.path.join(resource_path, "icons8-secure-100.ico")),
-            size=(26, 26))
+    dark_image=Image.open(os.path.join(resource_path, "icons8-secure-100.ico")),
+    size=(26, 26))
 
 
 def get_user_input(dialog_title, label_text):
@@ -45,8 +51,7 @@ def get_user_input(dialog_title, label_text):
     pin_entry.pack(expand=True)
 
     pin_dialog.grab_set()
-    pin_dialog.focus_force()
-    pin_entry.focus_force()
+    pin_dialog.after(100, pin_entry.focus_force)
 
     submit_button = customtkinter.CTkButton(pin_dialog, text="Potwierdź",
                                             command=lambda: verify_pin(pin_entry.get()))
@@ -56,11 +61,11 @@ def get_user_input(dialog_title, label_text):
     pin_dialog.bind('<Escape>', lambda event: pin_dialog.destroy())
 
     pin_dialog.update_idletasks()
-    screen_width = pin_dialog.winfo_screenwidth()
-    screen_height = pin_dialog.winfo_screenheight()
-    x = (screen_width - pin_dialog.winfo_width()) // 2
-    y = (screen_height - pin_dialog.winfo_height()) // 2
-    pin_dialog.geometry("+{}+{}".format(x, y))
+    # screen_width = pin_dialog.winfo_screenwidth()
+    # screen_height = pin_dialog.winfo_screenheight()
+    # x = (screen_width - pin_dialog.winfo_width()) // 2
+    # y = (screen_height - pin_dialog.winfo_height()) // 2
+    # pin_dialog.geometry("+{}+{}".format(x, y))
 
     pin_dialog.wait_window(pin_dialog)
     return pin_storage['user_pin']
