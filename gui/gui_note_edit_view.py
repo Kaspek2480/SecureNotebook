@@ -21,9 +21,13 @@ class NoteEditor(customtkinter.CTk):
         for i in range(3):
             self.grid_columnconfigure(i, weight=1)
 
-        self.textbox = customtkinter.CTkTextbox(self, width=250, height=250, border_color="gray70", border_width=1,
-                                                fg_color="transparent")
-        self.textbox.grid(row=0, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
+        # self.textbox = customtkinter.CTkTextbox(self, width=250, height=250, border_color="gray70", border_width=1,
+        #                                         fg_color="transparent")
+        # self.textbox.grid(row=0, column=1, padx=(20, 20), pady=(20, 20), sticky="nsew")
+
+        self.textbox = customtkinter.CTkTextbox(self, width=100)
+        self.textbox.grid(row=0, column=1, padx=(20, 0), pady=(20, 0), sticky="nsew")
+
         self.textbox.insert("1.0", self.note_obj.content)
         self.textbox.focus_force()
         self.textbox.bind('<Escape>', lambda event: self.destroy())
@@ -35,6 +39,8 @@ class NoteEditor(customtkinter.CTk):
         # Center the textbox in the first column
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
+
+
 
         self.save_button = customtkinter.CTkButton(self, text="Zapisz", width=10, height=10, border_color="gray70",
                                                    border_width=1, fg_color="transparent",
