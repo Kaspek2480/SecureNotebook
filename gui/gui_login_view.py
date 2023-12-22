@@ -194,9 +194,8 @@ class App(customtkinter.CTk):
 
         def pin_verify_impl(user):
             print(f"Selected user: {user.display_name}")
-
             while True:
-                pin = get_user_input("Podaj PIN", f"Podaj PIN dla użytkownika {user.display_name}")
+                pin = get_user_input("Podaj PIN", f"Podaj PIN dla użytkownika {user.display_name}", password=True)
                 if pin is None:
                     return
 
@@ -208,9 +207,8 @@ class App(customtkinter.CTk):
                 initialize_user(user, pin)
 
                 # switch to gui_dashboard_view
-                self.destroy()
+                self.hide_login_screen()
                 dashboard_app = Dashboard(user, self)
-                dashboard_app.mainloop()
 
                 print("Dashboard closed")
                 break
@@ -304,6 +302,18 @@ class App(customtkinter.CTk):
         self.user_list.clear()
         for user in users:
             self.user_list.add_item(user, image=self.user_image)
+
+    def hide_login_screen(self):
+        self.navigation_frame.grid_forget()
+        self.login_frame.grid_forget()
+        self.register_frame.grid_forget()
+        self.about_frame.grid_forget()
+
+    def show_login_screen(self):
+        self.navigation_frame.grid(row=0, column=0, sticky="nsew")
+        self.login_frame.grid(row=0, column=1, sticky="nsew")
+        self.register_frame.grid(row=0, column=1, sticky="nsew")
+        self.about_frame.grid(row=0, column=1, sticky="nsew")
 
     def switch_frame(self, name):
         # set button color for selected button

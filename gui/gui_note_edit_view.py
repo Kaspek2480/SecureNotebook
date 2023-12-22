@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 
 from gui.gui_utils import *
 from shared.database import Note
+from shared.manager import *
 
 
 class NoteEditor(customtkinter.CTkToplevel):
@@ -47,13 +48,13 @@ class NoteEditor(customtkinter.CTkToplevel):
         self.textbox.bind('<Key>', lambda event: self.text_changed())
 
         # <editor-fold desc="navigation buttons">
-        self.login_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
-                                                    border_spacing=10, text="Zapisz",
-                                                    fg_color="transparent", text_color=("gray10", "gray90"),
-                                                    hover_color=("gray70", "gray30"),
-                                                    image=dashboard_save_file_icon, anchor="w",
-                                                    command=self.save_note)
-        self.login_button.grid(row=1, column=0, sticky="ew")
+        self.save_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
+                                                   border_spacing=10, text="Zapisz",
+                                                   fg_color="transparent", text_color=("gray10", "gray90"),
+                                                   hover_color=("gray70", "gray30"),
+                                                   image=dashboard_save_file_icon, anchor="w",
+                                                   command=self.save_note)
+        self.save_button.grid(row=1, column=0, sticky="ew")
 
         self.rollback_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
                                                        border_spacing=10, text="Cofnij zmiany",
@@ -73,6 +74,10 @@ class NoteEditor(customtkinter.CTkToplevel):
         # </editor-fold>
 
     def save_note(self):
+        self.note_obj.content = self.get_note_textbox_content()
+        update_note(self.note_obj)
+        ensure_decrypted_note(self.note_obj)
+
         self.text_edited = False
         self.title(self.get_title_bar())
 
@@ -105,6 +110,7 @@ class NoteEditor(customtkinter.CTkToplevel):
     def handle_note_revert(self):
         # check if note content was changed
         if self.get_note_textbox_content() == self.note_content_before_edits:
+            messagebox.showinfo("Brak zmian", "Nie dokonano żadnych zmian.")
             return
 
         if not messagebox.askyesno("Cofnij zmiany",

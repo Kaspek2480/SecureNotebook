@@ -28,7 +28,7 @@ secure_notebook_logo = customtkinter.CTkImage(
     size=(26, 26))
 
 
-def get_user_input(dialog_title, label_text):
+def get_user_input(dialog_title, label_text, password=False):
     pin_storage = {'user_pin': None}
 
     def verify_pin(pin):
@@ -47,7 +47,7 @@ def get_user_input(dialog_title, label_text):
                                        font=customtkinter.CTkFont(size=14))
     pin_label.pack(expand=True)
 
-    pin_entry = customtkinter.CTkEntry(pin_dialog, show="*")
+    pin_entry = customtkinter.CTkEntry(pin_dialog, show="*" if password else "")
     pin_entry.pack(expand=True)
 
     pin_dialog.grab_set()
