@@ -108,7 +108,7 @@ class NoteEditor(customtkinter.CTkToplevel):
 
     def handle_note_revert(self):
         # check if note content was changed
-        if self.get_note_textbox_content() == self.note_content_before_edits:
+        if not self.is_note_modified():
             messagebox.showinfo("Brak zmian", "Nie dokonano żadnych zmian.")
             return
 
@@ -123,6 +123,9 @@ class NoteEditor(customtkinter.CTkToplevel):
         self.text_edited = True
         self.title(self.get_title_bar())
 
+    def is_note_modified(self):
+        return self.get_note_textbox_content() != self.note_content_before_edits
+
     def handle_user_exit(self):
         if self.text_edited:
             if not messagebox.askyesno("Zmiany nie zostały zapisane",
@@ -130,9 +133,10 @@ class NoteEditor(customtkinter.CTkToplevel):
                 self.regain_focus()
                 return
 
-        self.close()
-        if self.exit_callback is not None:
+        # call exit callback (refresh notes list) only if user edited note
+        if self.exit_callback is not None and self.is_note_modified():
             self.exit_callback()
+        self.close()
 
     def regain_focus(self):
         self.after(100, self.lift)
