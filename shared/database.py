@@ -92,14 +92,6 @@ class User(Base):
 
     def update_last_access(self):
         self.last_access_timestamp = int(datetime.now().timestamp())
-        # self.update_itself()
-
-    # def update_itself(self):
-    #     Session = sessionmaker(bind=engine)
-    #     session = Session()
-    #     session.add(self)
-    #     session.commit()
-    #     session.close()
 
 
 class Note(Base):
@@ -115,7 +107,7 @@ class Note(Base):
 
     encrypted = True
 
-    # invoked only when creating new note
+    # invoked only when new note is created
     def __init__(self, title, content=""):
         # print("Executed __init__ with " + content)
         super().__init__()
@@ -131,7 +123,6 @@ class Note(Base):
     # invoked while fetching from db
     @orm.reconstructor
     def init_on_load(self):
-        # print("Executed note init_on_load with " + self.content)
         self.encrypted = True
 
     def update_last_modify(self):
@@ -145,27 +136,6 @@ class Note(Base):
         session.add(self)
         session.commit()
         session.close()
-
-    # def decrypt(self):
-    #     if self.encrypted:
-    #         self.content = decrypt_text(user_key, user_iv, bytes.fromhex(self.content))
-    #         self.title = decrypt_text(user_key, user_iv, bytes.fromhex(self.title))
-    #         self.encrypted = False
-    #
-    # def encrypt(self):
-    #     if not self.encrypted:
-    #         self.content = encrypt_text(user_key, user_iv, self.content.encode())
-    #         self.title = encrypt_text(user_key, user_iv, self.title.encode())
-    #         self.encrypted = True
-    #
-    # def ensure_encrypted(self):
-    #     if not self.encrypted:
-    #         self.encrypt()
-    #
-    # def ensure_decrypted(self):
-    #     if self.encrypted:
-    #         self.decrypt()
-
 
 class UserNoteLink(Base):
     __tablename__ = 'user_note_link'

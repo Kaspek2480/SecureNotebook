@@ -1,17 +1,6 @@
-import os
-import tkinter
-from tkinter import Scrollbar, Listbox
-
-import customtkinter
-from PIL import Image
-
-from CTkTable import *
-
 from gui.gui_note_edit_view import NoteEditor
-# from gui.gui_login_view import App
-from shared.database import init
-from shared.manager import *
 from gui.gui_utils import *
+from shared.manager import *
 
 
 class NoteList(customtkinter.CTkScrollableFrame):
@@ -171,14 +160,6 @@ class Dashboard:
                                                          command=lambda: self.switch_frame("user_notes"))
         self.user_notes_button.grid(row=2, column=0, sticky="ew")
 
-        # self.user_profile_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
-        #                                                    border_spacing=10, text="Profil",
-        #                                                    fg_color="transparent", text_color=("gray10", "gray90"),
-        #                                                    hover_color=("gray70", "gray30"),
-        #                                                    image=self.user_profile_image, anchor="w",
-        #                                                    command=lambda: self.switch_frame("user_profile"))
-        # self.user_profile_button.grid(row=3, column=0, sticky="ew")
-
         self.logout_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
                                                      border_spacing=10, text="Wyloguj",
                                                      fg_color="transparent", text_color=("gray10", "gray90"),
@@ -217,10 +198,11 @@ class Dashboard:
 
     def edit_impl(self, note):
         def exit_callback():
-            print("Editor closed")
             self.reload_notes()
 
         editor = NoteEditor(note, exit_callback, self.root)
+
+        # take focus from main window to editor
         editor.grab_set()
         editor.after(100, editor.lift)  # Workaround for bug where main window takes focus
         editor.after(100, editor.focus_force)  # Workaround for bug where main window takes focus
@@ -288,7 +270,7 @@ class Dashboard:
 
 
 if __name__ == "__main__":
+    toplevel = customtkinter.CTkToplevel
     user = fetch_user_by_id(12)
     initialize_user(user, "123")
-    app = Dashboard(user, None)
-    app.mainloop()
+    app = Dashboard(user, root=toplevel, exit_callback=None)

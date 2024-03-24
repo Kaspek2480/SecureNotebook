@@ -18,7 +18,7 @@ def exec_file(launch_type):
 
     komenda = [python_exe_path, script]
 
-    print(f"Komenda: {komenda}")
+    print(f"Invoked command: {komenda}")
     subprocess.run(komenda)
 
 

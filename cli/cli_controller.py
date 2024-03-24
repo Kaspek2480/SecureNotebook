@@ -31,10 +31,9 @@ class NavigationResult:
 
 
 def display_program_info(stdscr):
-    # Ukrycie kursora, aby nie przeszkadzał w interakcji
+    # hide cursor
     curses.curs_set(0)
 
-    # Informacje o programie
     program_info = [
         "Witaj w SecureNotebook - bezpiecznym miejscu na Twoje notatki!",
         " ",
@@ -47,17 +46,15 @@ def display_program_info(stdscr):
         "Naciśnij dowolny klawisz, aby opuścić ekran informacyjny."
     ]
 
-    stdscr.clear()  # Wyczyszczenie ekranu
+    stdscr.clear()
 
-    # Wyśrodkowanie i wyświetlenie informacji o programie
+    # center the text
     for i, line in enumerate(program_info):
         print_centered(stdscr, line, line_from_center=i - len(program_info) // 2, color_pair=2)
 
-    stdscr.refresh()  # Odświeżenie ekranu
-
-    # Oczekiwanie na dowolny klawisz
-    stdscr.getch()
-    stdscr.clear()  # Wyczyszczenie ekranu
+    stdscr.refresh()
+    stdscr.getch()  # wait for user to press any key
+    stdscr.clear()
 
 
 def draw_register_screen(stdscr):
@@ -73,10 +70,10 @@ def draw_register_screen(stdscr):
     username_prompt.addstr(0, 0, "> ")
     username_prompt.refresh()
     curses.echo()
-    username_prompt.keypad(True)  # Włącz tryb KEY_PAD
+    username_prompt.keypad(True)  # enable KEY_PAD mode to handle special keys
     username = username_prompt.getstr(0, 2, 16).decode('utf-8')
     curses.noecho()
-    username_prompt.keypad(False)  # Wyłącz tryb KEY_PAD
+    username_prompt.keypad(False)  # disable KEY_PAD mode
 
     # get pin, try until user enters pin which is digit only
     print_centered(stdscr, "Podaj kod PIN (6 cyfr):")
@@ -121,7 +118,7 @@ def draw_register_screen(stdscr):
 
 
 def draw_pin_auth_screen(stdscr, user):
-    curses.curs_set(0)  # Ukryj kursor
+    curses.curs_set(0)  # hide cursor
     stdscr.clear()
 
     print_centered_from_top(stdscr, "SecureNotebook - Logowanie kodem PIN", 0, color_pair=3)
@@ -145,6 +142,7 @@ def draw_pin_auth_screen(stdscr, user):
         cursor_position = 0
         pin_input.move(0, cursor_position)
 
+        # get pin from user, digit by digit
         while True:
             stdscr.refresh()
             key = pin_input.getch()
@@ -187,36 +185,33 @@ def draw_user_select_screen(stdscr, users):
     curses.curs_set(0)
     stdscr.clear()
 
-    # Pobierz wysokość i szerokość terminala
     height, width = stdscr.getmaxyx()
 
-    # Ustaw długość listy użytkowników (maksymalnie 5)
-    user_list_length = min(len(users), 5)
+    # set user list length (max 5)
+    user_list_max_length = min(len(users), 5)
 
-    # Ustaw pozycję początkową
+    # set initial position
     start_pos = 0
     current_row = 0
 
     while True:
         stdscr.clear()
 
-        # Wyświetl napis "Super Program" na górze terminala
         print_centered_from_top(stdscr, "SecureNotebook - Wybór użytkownika", 0, color_pair=3)
 
-        # Wyświetl nagłówki kolumn
+        # display column headers
         stdscr.addstr(height // 2 - 3, width // 2 - len("Nazwa użytkownika") - 5, "Nazwa użytkownika", curses.A_BOLD)
         stdscr.addstr(height // 2 - 3, width // 2 + 5, "Ostatnio widziany", curses.A_BOLD)
 
-        currently_visible_users = users[start_pos:start_pos + user_list_length]
+        currently_visible_users = users[start_pos:start_pos + user_list_max_length]
 
-        # Wyświetl listę użytkowników
+        # display users
         i = 0
         for user in currently_visible_users:
             user_info = user.display_name
             last_visit_info = timestamp_to_date(user.last_access_timestamp)
-            # last_visit_info = user.last_access_timestamp.strftime("%d/%m/%Y %H:%M")
 
-            # Podświetl aktualnie wybrany wiersz
+            # highlight currently selected row
             if i == current_row:
                 stdscr.attron(curses.color_pair(4))
                 stdscr.addstr(height // 2 - 2 + i, width // 2 - len("Nazwa użytkownika") - 5, user_info)
@@ -228,24 +223,24 @@ def draw_user_select_screen(stdscr, users):
 
             i += 1
 
-        # Wyświetl aktualną pozycję na liście
+        # display current position on the list
         stdscr.addstr(height - 1, 0,
                       f"Strzałki: Góra/Dół, ENTER - wybierz użytkownika, Q - wyjdź.")
 
-        # Obsługa klawiszy
+        # key handling
         key = stdscr.getch()
 
         if key == ord('q') or key == ord('Q') or key == 27:  # ESC or Q:
             return NavigationResult(NavigationAction.BACK, None)
-        elif key == curses.KEY_DOWN and current_row < user_list_length - 1:
+        elif key == curses.KEY_DOWN and current_row < user_list_max_length - 1:
             current_row += 1
-            if current_row == user_list_length - 1 and start_pos + user_list_length < len(users):
+            if current_row == user_list_max_length - 1 and start_pos + user_list_max_length < len(users):
                 start_pos += 1
         elif key == curses.KEY_UP and current_row > 0:
             current_row -= 1
             if current_row == 0 and start_pos > 0:
                 start_pos -= 1
-        elif key == curses.KEY_DOWN and current_row == user_list_length - 1 and start_pos + user_list_length < len(
+        elif key == curses.KEY_DOWN and current_row == user_list_max_length - 1 and start_pos + user_list_max_length < len(
                 users):
             start_pos += 1
         elif key == curses.KEY_UP and current_row == 0 and start_pos > 0:
@@ -260,22 +255,22 @@ def draw_main_login_screen(stdscr):
     curses.curs_set(0)
     stdscr.clear()
 
-    # Pobierz wysokość i szerokość terminala
     height, width = stdscr.getmaxyx()
 
-    # Ustaw pozycję początkową
+    # set initial position
     current_row = 0
 
     print_centered_from_top(stdscr, "SecureNotebook - Autoryzacja", 0, color_pair=3)
 
-    # Ustaw opcje menu
-    menu_options = [{"action": AuthAction.LOGIN, "text": "Zaloguj się"},
-                    {"action": AuthAction.REGISTER, "text": "Zarejestruj się"},
-                    {"action": AuthAction.ABOUT, "text": "O programie"},
-                    {"action": AuthAction.EXIT, "text": "Wyjdź"}]
+    menu_options = [
+        {"action": AuthAction.LOGIN, "text": "Zaloguj się"},
+        {"action": AuthAction.REGISTER, "text": "Zarejestruj się"},
+        {"action": AuthAction.ABOUT, "text": "O programie"},
+        {"action": AuthAction.EXIT, "text": "Wyjdź"}
+    ]
 
     while True:
-        # Wyświetl opcje menu
+        # display menu options
         for i, option in enumerate(menu_options):
             text = option['text']
             if i == current_row:
@@ -285,7 +280,7 @@ def draw_main_login_screen(stdscr):
             else:
                 stdscr.addstr(height // 2 - 2 + i, width // 2 - len(text) // 2, text)
 
-        # Obsługa klawiszy
+        # key handling
         key = stdscr.getch()
 
         if key == ord('q'):
@@ -303,17 +298,14 @@ def draw_main_login_screen(stdscr):
 def draw_notes_select_screen(stdscr, user):
     curses.curs_set(0)
     stdscr.clear()
-    refresh = False
-
-    notes = fetch_user_notes(user.user_id)
-
-    # Pobierz wysokość i szerokość terminala
     height, width = stdscr.getmaxyx()
 
-    # Ustaw długość listy użytkowników (maksymalnie 5)
+    refresh = False
+    notes = fetch_user_notes(user.user_id)
+
+    # set list length (max 7)
     note_list_length = min(len(notes), 7)
 
-    # Ustaw pozycję początkową
     start_pos = 0
     current_row = 0
 
@@ -332,7 +324,7 @@ def draw_notes_select_screen(stdscr, user):
         note_title_text = "Nazwa notatki"
         last_edit_text = "Ostatnia edycja"
 
-        # Wyświetl nagłówki kolumn
+        # display column headers
         stdscr.addstr(height // 2 - 3, width // 2 - len(note_title_text) - 5, note_title_text, curses.A_BOLD)
         stdscr.addstr(height // 2 - 3, width // 2 + 5, last_edit_text, curses.A_BOLD)
 
@@ -347,7 +339,7 @@ def draw_notes_select_screen(stdscr, user):
             else:
                 note_title = "  " + note_title
 
-            # Podświetl aktualnie wybrany wiersz
+            # highlight currently selected row
             if i == current_row:
                 stdscr.attron(curses.color_pair(4))
                 stdscr.addstr(height // 2 - 2 + i, width // 2 - len(note_title_text) - 5, note_title)
@@ -359,12 +351,12 @@ def draw_notes_select_screen(stdscr, user):
 
             i += 1
 
-        # Wyświetl aktualną pozycję na liście
+        # display current position on the list
         stdscr.addstr(height - 1, 0,
                       f"Strzałki: Góra/Dół, ENTER - wybierz, N - nowa, D - usuń, "
                       f"F - ulubiona, Q - wyjdź, L - wyloguj")
 
-        # Obsługa klawiszy
+        # key handling
         key = stdscr.getch()
 
         current_note = None
@@ -434,19 +426,20 @@ def get_note_name_screen(stdscr):
     note_prompt.addstr(0, 0, "> ")
     note_prompt.refresh()
     curses.echo()
-    note_prompt.keypad(True)  # Włącz tryb KEY_PAD
+
+    note_prompt.keypad(True)  # enable KEY_PAD mode to handle special keys
     note_name = note_prompt.getstr(0, 2, 16).decode('utf-8')
     curses.noecho()
-    note_prompt.keypad(False)  # Wyłącz tryb KEY_PAD
+    note_prompt.keypad(False)  # disable KEY_PAD mode
 
     return NavigationResult(NavigationAction.SUCCESS, note_name)
 
 
 def draw_note_edit_screen(stdscr, note):
-    curses.curs_set(1)  # Ukryj kursor
-    curses.noecho()  # Wyłącz echo (nie pokazuj wpisywanych znaków)
-    curses.cbreak()  # Włącz tryb "cbreak" (nie czekaj na Enter)
-    stdscr.keypad(True)  # Włącz obsługę specjalnych klawiszy
+    curses.curs_set(1)  # hide cursor
+    curses.noecho()  # do not show typed characters (we will handle it manually)
+    curses.cbreak()  # enable instant key input (no need to press Enter)
+    stdscr.keypad(True)  # enable KEY_PAD mode to handle special keys
 
     current_line = 0
     cursor_x = 0
@@ -498,10 +491,10 @@ def draw_note_edit_screen(stdscr, note):
         elif key == 27:  # Escape
             break
         elif key == 127:  # Backspace
-            # Usuń znak z aktualnej linii
+            # remove character at current position
             if cursor_x > 0 or current_line > 0:
                 if cursor_x == 0:
-                    # Dołącz aktualną linię do poprzedniej linii
+                    # append current line to previous line
                     cursor_x = len(note_lines[current_line - 1])
                     note_lines[current_line - 1] += note_lines.pop(current_line)
                     current_line -= 1
@@ -514,7 +507,7 @@ def draw_note_edit_screen(stdscr, note):
                     )
                     cursor_x -= 1
         elif key == curses.KEY_DC:  # DEL
-            # Usuń znak na aktualnej pozycji
+            # delete character at current position
             if cursor_x < len(note_lines[current_line]) or current_line < len(note_lines) - 1:
                 if cursor_x == len(note_lines[current_line]):
                     # Dołącz kolejną linię do aktualnej linii
@@ -596,8 +589,8 @@ def main(stdscr):
     init()
 
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)  # Przykładowa para kolorów (tekst na niebieskim tle)
-    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Przykładowa para kolorów (tekst na niebieskim tle)
+    curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 

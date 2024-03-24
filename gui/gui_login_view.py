@@ -9,8 +9,6 @@ from shared.manager import *
 from gui.gui_utils import *
 from gui.gui_dashboard import *
 
-input_pin = None
-
 
 class UserList(customtkinter.CTkScrollableFrame):
     def __init__(self, master, command=None, **kwargs):
@@ -223,7 +221,7 @@ class App(customtkinter.CTk):
 
         main_label_font = customtkinter.CTkFont(family="Helvetica", size=20)
         main_info_label = customtkinter.CTkLabel(register_frame,
-                                                 text="Zarejestruj nowego użytkownika:",
+                                                 text="Rejestracja nowego użytkownika:",
                                                  font=main_label_font, width=120, height=25)
         main_info_label.grid(row=0, column=0, padx=20, pady=20)
 
@@ -250,7 +248,9 @@ class App(customtkinter.CTk):
         # </editor-fold>
 
         disclaimer_label = customtkinter.CTkLabel(register_frame,
-                                                  text="Uwaga: PIN musi mieć co najmniej 4 znaki i może zawierać tylko cyfry. Nie ma możliwości odzyskania PIN-u, więc pamiętaj o nim!",
+                                                  text="Uwaga: "
+                                                       "PIN musi mieć co najmniej 4 znaki i może zawierać tylko cyfry. "
+                                                       "Nie ma możliwości odzyskania PIN-u, więc pamiętaj o nim!",
                                                   text_color="red", wraplength=600)
         disclaimer_label.grid(row=8, column=0, padx=50, pady=50)
 

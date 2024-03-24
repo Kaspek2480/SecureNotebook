@@ -1,9 +1,6 @@
 from tkinter import *
-import tkinter as tk
-from PIL import Image, ImageTk
 
 from gui.gui_utils import *
-from shared.database import Note
 from shared.manager import *
 
 
@@ -45,8 +42,9 @@ class NoteEditor(customtkinter.CTkToplevel):
         self.textbox.insert("1.0", self.note_obj.content)
         self.textbox.bind('<Control-s>', lambda event: self.save_note())
         self.textbox.bind('<Control-S>', lambda event: self.save_note())
-        # trace if user changes text in textbox
-        self.textbox.bind('<Key>', lambda event: self.text_changed())
+
+        # trace any changes in textbox
+        self.textbox.bind('<Key>', lambda event: self.text_changed_callback())
 
         # <editor-fold desc="navigation buttons">
         self.save_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40,
@@ -82,7 +80,7 @@ class NoteEditor(customtkinter.CTkToplevel):
         self.text_edited = False
         self.title(self.get_title_bar())
 
-    def text_changed(self):
+    def text_changed_callback(self):
         if not self.text_edited:
             self.text_edited = True
             self.title(self.get_title_bar())
@@ -98,13 +96,10 @@ class NoteEditor(customtkinter.CTkToplevel):
             return f"{self.note_obj.title} - SecureNotebook"
 
     # restore all changes made to note content
-    # but not save it to database - user decides if he wants to save changes or not
+    # but don't save it to database - user will decide if he wants to save changes or not
     def get_note_textbox_content(self):
         note_text = self.textbox.get('1.0', "end-1c")
         return note_text
-
-    def set_note_text(self, text):
-        self.textbox.insert("1.0", text)
 
     def handle_note_revert(self):
         # check if note content was changed
@@ -144,8 +139,9 @@ class NoteEditor(customtkinter.CTkToplevel):
         self.textbox.focus_force()
 
 
+# for testing purposes only
 if __name__ == "__main__":
-    n = Note(title="Test", content="XD")
+    n = Note(title="Test", content="Testowa notatka")
     print(n)
 
     note_editor = NoteEditor(n)
